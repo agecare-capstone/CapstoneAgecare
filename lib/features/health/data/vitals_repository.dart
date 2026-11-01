@@ -23,6 +23,9 @@ abstract class VitalsRepository {
   Future<List<LatestVital>> getLatest(String patientId);
 
   Future<List<Threshold>> getThresholds(String patientId);
+
+  /// Configura el umbral de un vital (endpoint 5.6). Solo familiar o médico.
+  Future<Threshold> updateThreshold(String patientId, Threshold threshold);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +90,19 @@ class VitalsRepositoryHttp implements VitalsRepository {
     return ((res['items'] ?? []) as List)
         .map((e) => Threshold.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<Threshold> updateThreshold(
+      String patientId, Threshold threshold) async {
+    final res = await _api.put<Map<String, dynamic>>(
+      '/patients/$patientId/vitals/thresholds/${threshold.type.apiValue}',
+      data: {
+        'min_value': threshold.minValue,
+        'max_value': threshold.maxValue,
+      },
+    );
+    return Threshold.fromJson(res);
   }
 }
 
@@ -252,8 +268,19 @@ class VitalsRepositoryMock implements VitalsRepository {
     return true;
   }
 
+  /// Umbrales editados en la demo; los que no se tocaron siguen los de fábrica.
+  final _edited = <VitalType, Threshold>{};
+
   @override
-  Future<List<Threshold>> getThresholds(String patientId) async => _thresholds;
+  Future<List<Threshold>> getThresholds(String patientId) async =>
+      [for (final t in _thresholds) _edited[t.type] ?? t];
+
+  @override
+  Future<Threshold> updateThreshold(
+      String patientId, Threshold threshold) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return _edited[threshold.type] = threshold;
+  }
 }
 
 final vitalsRepositoryProvider = Provider<VitalsRepository>((ref) {

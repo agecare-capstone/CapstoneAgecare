@@ -86,7 +86,8 @@ class PatientsRepositoryHttp implements PatientsRepository {
   @override
   Future<List<CircleMember>> listCircleMembers(String patientId) async {
     final data = await _api.get<Map<String, dynamic>>('/patients/$patientId/members');
-    return ((data['items'] ?? []) as List)
+    // El contrato responde {members: [...]}; 'items' queda por compatibilidad.
+    return ((data['members'] ?? data['items'] ?? []) as List)
         .map((e) => CircleMember.fromJson(e as Map<String, dynamic>))
         .toList();
   }
@@ -145,6 +146,7 @@ class PatientsRepositoryMock implements PatientsRepository {
       memberId: 'm-1',
       fullName: 'Claudia Iosue',
       email: 'claudia.cuidadora@agecare.app',
+      phone: '+56911112222',
       role: RoleType.caregiver,
       status: InvitationState.accepted,
       joinedAt: DateTime.now().subtract(const Duration(days: 30)),

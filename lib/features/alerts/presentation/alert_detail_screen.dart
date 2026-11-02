@@ -2,13 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../auth/domain/models.dart';
+import '../../patients/data/patients_repository.dart';
 import '../application/alerts_providers.dart';
 import '../data/alerts_repository.dart';
 import '../domain/models.dart';
+
+/// Número de emergencias (SAMU en Chile) para el botón de la pantalla de caída.
+const emergencyNumber = '131';
+
+/// Teléfono de la primera cuidadora del paciente que lo tenga registrado.
+/// Si el usuario no puede ver el círculo (o no hay teléfono), null.
+final caregiverPhoneProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, patientId) async {
+  try {
+    final members =
+        await ref.watch(patientsRepositoryProvider).listCircleMembers(patientId);
+    for (final m in members) {
+      final phone = m.phone;
+      if (m.role == RoleType.caregiver && phone != null && phone.isNotEmpty) {
+        return phone;
+      }
+    }
+  } catch (_) {}
+  return null;
+});
 
 /// Carga una alerta puntual buscándola en la lista del usuario.
 final _alertByIdProvider =
@@ -52,12 +75,79 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
     }
   }
 
+  /// Abre el marcador del teléfono con [number].
+  Future<void> _call(String number) async {
+    final ok = await launchUrl(Uri(scheme: 'tel', path: number));
+    if (!ok && mounted) {
+      showAppSnackBar(context, 'No se pudo abrir el marcador ($number).',
+          error: true);
+    }
+  }
+
+  /// Pide la nota de cierre (obligatoria en alertas críticas). null = cancelar.
+  Future<String?> _askResolutionNote() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Resolver alerta'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 300,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: '¿Cómo se atendió?',
+              hintText: 'Ej.: Ya está acostada, sin golpes visibles.',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (_) => setLocal(() {}),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: controller.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.of(ctx).pop(controller.text.trim()),
+              child: const Text('Resolver'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _resolve(Alert alert) async {
+    String? note;
+    if (alert.severity == AlertSeverity.critical) {
+      note = await _askResolutionNote();
+      if (note == null) return;
+    }
+    await _run(
+        () => ref.read(alertsRepositoryProvider).resolve(alert.id, note: note),
+        'Alerta resuelta. Avisamos al resto del grupo.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(_alertByIdProvider(widget.alertId));
+    final alert = async.valueOrNull;
+    // AGE-505: una caída sin resolver se muestra como pantalla roja de emergencia.
+    final emergency =
+        alert != null && alert.type == AlertType.fall && !alert.isResolved;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de alerta')),
+      backgroundColor:
+          emergency ? AppColors.critical.withOpacity(.06) : null,
+      appBar: AppBar(
+        title: Text(emergency ? 'Caída detectada' : 'Detalle de alerta'),
+        backgroundColor: emergency ? AppColors.critical : null,
+        foregroundColor: emergency ? Colors.white : null,
+      ),
       body: async.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(
@@ -72,19 +162,19 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
               subtitle: 'Es posible que ya haya sido resuelta o eliminada.',
             );
           }
+          final caregiverPhone = alert.type == AlertType.fall
+              ? ref.watch(caregiverPhoneProvider(alert.patientId)).valueOrNull
+              : null;
           return _AlertDetailBody(
             alert: alert,
             busy: _busy,
-            onCall: () => showAppSnackBar(
-                context,
-                'Llamando a ${alert.patientName.isEmpty ? 'el adulto mayor' : alert.patientName}... '
-                '(demostración)'),
+            onCallCaregiver:
+                caregiverPhone == null ? null : () => _call(caregiverPhone),
+            onCallEmergency: () => _call(emergencyNumber),
             onAcknowledge: () => _run(
                 () => ref.read(alertsRepositoryProvider).acknowledge(alert.id),
                 'Alerta reconocida'),
-            onResolve: () => _run(
-                () => ref.read(alertsRepositoryProvider).resolve(alert.id),
-                'Alerta marcada como atendida'),
+            onResolve: () => _resolve(alert),
           );
         },
       ),
@@ -96,14 +186,18 @@ class _AlertDetailBody extends StatelessWidget {
   const _AlertDetailBody({
     required this.alert,
     required this.busy,
-    required this.onCall,
+    required this.onCallCaregiver,
+    required this.onCallEmergency,
     required this.onAcknowledge,
     required this.onResolve,
   });
 
   final Alert alert;
   final bool busy;
-  final VoidCallback onCall;
+
+  /// null si no hay cuidadora con teléfono registrado.
+  final VoidCallback? onCallCaregiver;
+  final VoidCallback onCallEmergency;
   final VoidCallback onAcknowledge;
   final VoidCallback onResolve;
 
@@ -169,8 +263,8 @@ class _AlertDetailBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Contacta al adulto mayor de inmediato para confirmar su estado. '
-                  'Si no responde, considera llamar a emergencias.',
+                  'Llama a la cuidadora para confirmar el estado del adulto mayor. '
+                  'Si no responde o hay lesiones, llama a emergencias.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 14),
@@ -179,9 +273,22 @@ class _AlertDetailBody extends StatelessWidget {
                     backgroundColor: AppColors.critical,
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  onPressed: onCall,
+                  onPressed: onCallCaregiver,
                   icon: const Icon(Icons.call_rounded),
-                  label: const Text('Llamar al adulto mayor'),
+                  label: Text(onCallCaregiver == null
+                      ? 'Cuidadora sin teléfono registrado'
+                      : 'Llamar a Cuidadora'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.critical,
+                    side: const BorderSide(color: AppColors.critical),
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  onPressed: onCallEmergency,
+                  icon: const Icon(Icons.local_hospital_rounded),
+                  label: const Text('Llamar a Emergencias ($emergencyNumber)'),
                 ),
               ],
             ),
@@ -244,7 +351,7 @@ class _AlertDetailBody extends StatelessWidget {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.task_alt_rounded),
-            label: Text(isFall ? 'Marcar atendida' : 'Resolver alerta'),
+            label: const Text('Resolver alerta'),
           ),
         ] else
           Container(

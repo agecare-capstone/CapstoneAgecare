@@ -179,6 +179,7 @@ class CircleMember {
     required this.role,
     required this.status,
     required this.joinedAt,
+    this.phone,
   });
 
   final String memberId;
@@ -188,17 +189,22 @@ class CircleMember {
   final InvitationState status;
   final DateTime joinedAt;
 
+  /// Teléfono del perfil; lo usa "Llamar a Cuidadora" ante una caída.
+  final String? phone;
+
   bool get isPending => status == InvitationState.pending;
   bool get isExpired => status == InvitationState.expired;
   bool get isAccepted => status == InvitationState.accepted;
 
   factory CircleMember.fromJson(Map<String, dynamic> json) => CircleMember(
-        memberId: json['member_id'] as String,
+        // El contrato envía user_id; member_id queda por compatibilidad.
+        memberId: (json['member_id'] ?? json['user_id']) as String,
         fullName: json['full_name'] as String,
         email: json['email'] as String,
         role: RoleType.fromApi((json['role'] ?? 'caregiver') as String),
         status: InvitationState.fromApi((json['status'] ?? 'accepted') as String),
         joinedAt: DateTime.parse(json['joined_at'] as String),
+        phone: json['phone'] as String?,
       );
 }
 

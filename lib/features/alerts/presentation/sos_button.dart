@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -34,25 +36,7 @@ class _SosButtonState extends ConsumerState<SosButton> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.sos_rounded, color: AppColors.critical, size: 40),
-        title: const Text('¿Enviar alerta SOS?'),
-        content: Text(
-          'Se notificará de inmediato a la red de cuidado de ${patient.fullName}. '
-          'Úsalo solo en una emergencia real.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.critical),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Enviar SOS'),
-          ),
-        ],
-      ),
+      builder: (_) => SosCountdownDialog(patientName: patient.fullName),
     );
 
     if (confirmed != true) return;
@@ -122,6 +106,74 @@ class _SosButtonState extends ConsumerState<SosButton> {
             )
           : const Icon(Icons.sos_rounded),
       label: Text(_sending ? 'Enviando...' : 'SOS'),
+    );
+  }
+}
+
+/// Confirmación anti-toque accidental (AGE-506): cuenta 3 segundos y envía
+/// el SOS sola, salvo que se cancele. "Enviar ahora" lo manda sin esperar,
+/// así el SOS nunca necesita más de 2 toques.
+///
+/// Devuelve true si hay que enviar el SOS y false (o null, si se cierra
+/// tocando fuera) si se canceló.
+class SosCountdownDialog extends StatefulWidget {
+  const SosCountdownDialog({super.key, required this.patientName});
+
+  final String patientName;
+
+  static const seconds = 3;
+
+  @override
+  State<SosCountdownDialog> createState() => _SosCountdownDialogState();
+}
+
+class _SosCountdownDialogState extends State<SosCountdownDialog> {
+  int _remaining = SosCountdownDialog.seconds;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_remaining <= 1) {
+        _close(true);
+      } else {
+        setState(() => _remaining--);
+      }
+    });
+  }
+
+  void _close(bool send) {
+    _timer?.cancel();
+    if (mounted) Navigator.of(context).pop(send);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      icon: const Icon(Icons.sos_rounded, color: AppColors.critical, size: 40),
+      title: Text('Enviando SOS en $_remaining...'),
+      content: Text(
+        'Se notificará de inmediato a la red de cuidado de ${widget.patientName}. '
+        'Si fue un toque accidental, presiona Cancelar.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => _close(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.critical),
+          onPressed: () => _close(true),
+          child: const Text('Enviar ahora'),
+        ),
+      ],
     );
   }
 }

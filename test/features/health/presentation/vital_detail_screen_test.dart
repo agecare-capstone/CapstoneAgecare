@@ -108,6 +108,10 @@ class _RecordingVitalsRepo implements VitalsRepository {
   @override
   Future<int> uploadBatch(String patientId, List<VitalReading> readings) =>
       throw UnimplementedError();
+
+  @override
+  Future<Threshold> updateThreshold(String patientId, Threshold threshold) =>
+      throw UnimplementedError();
 }
 
 void main() {

@@ -39,6 +39,8 @@ class MoreScreen extends ConsumerWidget {
       ],
       _MoreItem(Icons.notifications_outlined, 'Notificaciones',
           () => context.push('/settings/notifications')),
+      _MoreItem(Icons.tune_rounded, 'Umbrales de alerta',
+          () => context.push('/settings/thresholds')),
     ];
 
     return Scaffold(

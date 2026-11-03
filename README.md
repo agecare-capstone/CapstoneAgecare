@@ -132,7 +132,7 @@ Usuario de prueba: demo@agecare.app / agecare123
 ```bash
 flutter run \
   --dart-define=USE_MOCKS=false \
-  --dart-define=API_BASE_URL=https://api-dev.agecare.app \
+  --dart-define=API_BASE_URL=https://agecare-api-xnjbc.azurewebsites.net \
   --dart-define=SPIKE_APP_ID=1234
 ```
 
@@ -141,7 +141,7 @@ flutter run \
 La app se configura mediante dart-define en tiempo de compilación:
 
 - `USE_MOCKS` (bool, defecto: true) — Activa el modo demo sin backend
-- `API_BASE_URL` (string, defecto: https://api-dev.agecare.app) — Endpoint del backend
+- `API_BASE_URL` (string, defecto: https://agecare-api-xnjbc.azurewebsites.net) — Endpoint del backend. Para usar el backend de otro equipo que siga el contrato de Alloxentric, basta con cambiar este valor
 - `SPIKE_APP_ID` (int, defecto: 0) — Identificador para integración de wearables
 - `USE_WEARABLE_SIMULATOR` (bool, defecto: true) — Simulador de dispositivo vestible
 

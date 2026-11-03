@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/notifications/push_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -64,6 +65,15 @@ class _NotificationSettingsScreenState
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
+                    // AGE-507: SOS y caídas llegan siempre; no se pueden apagar.
+                    const _SwitchTile(
+                      title: 'Alertas críticas (SOS y caídas)',
+                      subtitle: 'Siempre activas por seguridad del paciente.',
+                      value: true,
+                      onChanged: null,
+                      locked: true,
+                    ),
+                    const Divider(height: 1),
                     _SwitchTile(
                       title: 'Alertas por push',
                       subtitle: 'Recibe alertas de salud y SOS en el teléfono.',
@@ -113,6 +123,23 @@ class _NotificationSettingsScreenState
                 ),
               ),
               const SizedBox(height: 20),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  leading: const Icon(Icons.tune_rounded,
+                      color: AppColors.primary),
+                  title: const Text('Umbrales de alerta',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text(
+                      'Define desde qué valores de pulso, oxígeno y '
+                      'temperatura se genera una alerta.',
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/settings/thresholds'),
+                ),
+              ),
+              const SizedBox(height: 20),
               const _PushTokenCard(),
             ],
           );
@@ -128,6 +155,7 @@ class _SwitchTile extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.locked = false,
   });
 
   final String title;
@@ -135,9 +163,15 @@ class _SwitchTile extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
+  /// Muestra un candado: la preferencia no se puede cambiar.
+  final bool locked;
+
   @override
   Widget build(BuildContext context) {
     return SwitchListTile(
+      secondary: locked
+          ? const Icon(Icons.lock_rounded, color: AppColors.critical)
+          : null,
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle,
           style: const TextStyle(

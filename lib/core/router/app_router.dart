@@ -28,6 +28,7 @@ import '../../features/patients/presentation/create_patient_screen.dart';
 import '../../features/patients/presentation/invite_member_screen.dart';
 import '../../features/patients/presentation/care_circle_screen.dart';
 import '../../features/premium/presentation/premium_screen.dart';
+import '../../features/health/presentation/thresholds_screen.dart';
 import '../../features/profile/presentation/notification_settings_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/main_shell.dart';
@@ -152,6 +153,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       GoRoute(path: '/settings/notifications', builder: (_, __) => const NotificationSettingsScreen()),
+      GoRoute(path: '/settings/thresholds', builder: (_, __) => const ThresholdsScreen()),
       // Alias usado desde ProfileScreen.
       GoRoute(path: '/profile/notifications', builder: (_, __) => const NotificationSettingsScreen()),
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),

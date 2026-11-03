@@ -27,6 +27,14 @@ class PushService {
       StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onNotificationTap => _taps.stream;
 
+  /// Toque que abrió la app estando cerrada (AGE-505): se entrega una sola vez.
+  Map<String, dynamic>? _initialTap;
+  Map<String, dynamic>? takeInitialTap() {
+    final tap = _initialTap;
+    _initialTap = null;
+    return tap;
+  }
+
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
@@ -61,6 +69,11 @@ class PushService {
           if (payload != null) _taps.add(_parse(payload));
         },
       );
+      final launch = await _local.getNotificationAppLaunchDetails();
+      final launchPayload = launch?.notificationResponse?.payload;
+      if (launch?.didNotificationLaunchApp == true && launchPayload != null) {
+        _initialTap = _parse(launchPayload);
+      }
     } catch (e) {
       // Ignorar o registrar error en plataformas que no soportan notificaciones locales
     }
@@ -75,6 +88,10 @@ class PushService {
         FirebaseMessaging.onMessage.listen(_onForegroundMessage);
         FirebaseMessaging.onMessageOpenedApp
             .listen((m) => _taps.add(Map<String, dynamic>.from(m.data)));
+        final initial = await messaging.getInitialMessage();
+        if (initial != null) {
+          _initialTap = Map<String, dynamic>.from(initial.data);
+        }
       } catch (e) {
         // Sin configuración Firebase (o en desarrollo): las notificaciones
         // locales siguen funcionando.

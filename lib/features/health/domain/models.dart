@@ -7,8 +7,11 @@ enum VitalType {
   temperature('temperature', 'Temperatura', '°C', Icons.thermostat_rounded),
   sleep('sleep', 'Sueño', 'h', Icons.bedtime_rounded),
   steps('steps', 'Pasos', 'pasos', Icons.directions_walk_rounded),
-  sedentaryMin('sedentary_min', 'Tiempo sedentario', 'min', Icons.chair_rounded),
-  fallEvent('fall_event', 'Caídas', 'eventos', Icons.warning_rounded);
+  sedentaryMin(
+      'sedentary_min', 'Tiempo sedentario', 'min', Icons.chair_rounded),
+  fallEvent('fall_event', 'Caídas', 'eventos', Icons.warning_rounded),
+  bloodPressure('blood_pressure', 'Presión arterial', 'mmHg',
+      Icons.monitor_heart_rounded);
 
   /// true para los 3 signos vitales "core" que se muestran siempre en Salud
   /// (AGE-304): ritmo cardíaco, SpO2 y temperatura. El resto son datos de
@@ -65,11 +68,21 @@ class VitalPoint {
 }
 
 class Threshold {
-  const Threshold({required this.type, this.minValue, this.maxValue});
+  const Threshold({
+    required this.type,
+    this.minValue,
+    this.maxValue,
+    this.minSecondary,
+    this.maxSecondary,
+  });
 
   final VitalType type;
   final double? minValue;
   final double? maxValue;
+
+  /// Rango de la diastólica; solo en presión arterial (DAC05-196).
+  final double? minSecondary;
+  final double? maxSecondary;
 
   bool isOutOfRange(double value) =>
       (minValue != null && value < minValue!) ||
@@ -79,6 +92,8 @@ class Threshold {
         type: VitalType.fromApi(json['type'] as String),
         minValue: (json['min_value'] as num?)?.toDouble(),
         maxValue: (json['max_value'] as num?)?.toDouble(),
+        minSecondary: (json['min_secondary'] as num?)?.toDouble(),
+        maxSecondary: (json['max_secondary'] as num?)?.toDouble(),
       );
 }
 
@@ -100,6 +115,7 @@ class LatestVital {
     required this.value,
     required this.measuredAt,
     this.inRange = true,
+    this.valueSecondary,
   });
 
   final VitalType type;
@@ -107,11 +123,15 @@ class LatestVital {
   final DateTime measuredAt;
   final bool inRange;
 
+  /// Diastólica, en lecturas de presión arterial.
+  final double? valueSecondary;
+
   factory LatestVital.fromJson(Map<String, dynamic> json) => LatestVital(
         type: VitalType.fromApi(json['type'] as String),
         value: (json['value'] as num).toDouble(),
         measuredAt: DateTime.parse(json['measured_at'] as String).toLocal(),
         inRange: (json['in_range'] ?? true) as bool,
+        valueSecondary: (json['value_secondary'] as num?)?.toDouble(),
       );
 
   String get displayValue {
@@ -126,6 +146,11 @@ class LatestVital {
         return '${h}h ${m.toString().padLeft(2, '0')}m';
       case VitalType.temperature:
         return value.toStringAsFixed(1);
+      case VitalType.bloodPressure:
+        final dia = valueSecondary;
+        return dia == null
+            ? value.toStringAsFixed(0)
+            : '${value.toStringAsFixed(0)}/${dia.toStringAsFixed(0)}';
       default:
         return value.toStringAsFixed(0);
     }

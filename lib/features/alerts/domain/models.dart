@@ -76,6 +76,8 @@ class Alert {
     this.acknowledgedBy,
     this.resolvedAt,
     this.meta,
+    this.resolutionNote,
+    this.falseAlarm = false,
   });
 
   final String id;
@@ -91,6 +93,12 @@ class Alert {
   final DateTime? resolvedAt;
   final Map<String, dynamic>? meta;
 
+  /// Nota con que se cerró la alerta.
+  final String? resolutionNote;
+
+  /// Se descartó como falsa alarma (DAC05-85).
+  final bool falseAlarm;
+
   bool get isActive => status == AlertStatus.active;
   bool get isResolved => status == AlertStatus.resolved;
 
@@ -98,6 +106,8 @@ class Alert {
     AlertStatus? status,
     String? acknowledgedBy,
     DateTime? resolvedAt,
+    String? resolutionNote,
+    bool? falseAlarm,
   }) =>
       Alert(
         id: id,
@@ -112,6 +122,8 @@ class Alert {
         acknowledgedBy: acknowledgedBy ?? this.acknowledgedBy,
         resolvedAt: resolvedAt ?? this.resolvedAt,
         meta: meta,
+        resolutionNote: resolutionNote ?? this.resolutionNote,
+        falseAlarm: falseAlarm ?? this.falseAlarm,
       );
 
   factory Alert.fromJson(Map<String, dynamic> json) => Alert(
@@ -129,5 +141,7 @@ class Alert {
             ? DateTime.parse(json['resolved_at'] as String).toLocal()
             : null,
         meta: json['meta'] as Map<String, dynamic>?,
+        resolutionNote: json['resolution_note'] as String?,
+        falseAlarm: json['false_alarm'] == true,
       );
 }

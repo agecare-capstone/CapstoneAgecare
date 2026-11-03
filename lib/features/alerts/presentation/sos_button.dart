@@ -104,7 +104,7 @@ class _SosButtonState extends ConsumerState<SosButton> {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
-          : const Icon(Icons.sos_rounded),
+          : const Icon(Icons.emergency_rounded),
       label: Text(_sending ? 'Enviando...' : 'SOS'),
     );
   }

@@ -76,8 +76,8 @@ class VitalsRepositoryHttp implements VitalsRepository {
 
   @override
   Future<List<LatestVital>> getLatest(String patientId) async {
-    final res =
-        await _api.get<Map<String, dynamic>>('/patients/$patientId/vitals/latest');
+    final res = await _api
+        .get<Map<String, dynamic>>('/patients/$patientId/vitals/latest');
     return ((res['items'] ?? []) as List)
         .map((e) => LatestVital.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -100,6 +100,10 @@ class VitalsRepositoryHttp implements VitalsRepository {
       data: {
         'min_value': threshold.minValue,
         'max_value': threshold.maxValue,
+        if (threshold.type == VitalType.bloodPressure) ...{
+          'min_secondary': threshold.minSecondary,
+          'max_secondary': threshold.maxSecondary,
+        },
       },
     );
     return Threshold.fromJson(res);
@@ -116,6 +120,7 @@ class VitalsRepositoryMock implements VitalsRepository {
     Threshold(type: VitalType.heartRate, minValue: 50, maxValue: 110),
     Threshold(type: VitalType.spo2, minValue: 92),
     Threshold(type: VitalType.temperature, minValue: 36.1, maxValue: 37.2),
+    Threshold(type: VitalType.bloodPressure, maxValue: 140, maxSecondary: 90),
   ];
 
   Random _rng(String patientId, VitalType type) =>
@@ -137,6 +142,8 @@ class VitalsRepositoryMock implements VitalsRepository {
         return 540;
       case VitalType.fallEvent:
         return 0;
+      case VitalType.bloodPressure:
+        return 122;
     }
   }
 
@@ -156,6 +163,8 @@ class VitalsRepositoryMock implements VitalsRepository {
         return rng.nextDouble() * 120 - 60;
       case VitalType.fallEvent:
         return 0;
+      case VitalType.bloodPressure:
+        return rng.nextDouble() * 16 - 8;
     }
   }
 
@@ -178,6 +187,8 @@ class VitalsRepositoryMock implements VitalsRepository {
         return 40;
       case VitalType.fallEvent:
         return 0;
+      case VitalType.bloodPressure:
+        return 8;
     }
   }
 
@@ -209,9 +220,12 @@ class VitalsRepositoryMock implements VitalsRepository {
         ts: day,
         value: double.parse(value.toStringAsFixed(1)),
         min: spread > 0
-            ? double.parse((value - spread).clamp(0, double.infinity).toStringAsFixed(1))
+            ? double.parse(
+                (value - spread).clamp(0, double.infinity).toStringAsFixed(1))
             : null,
-        max: spread > 0 ? double.parse((value + spread).toStringAsFixed(1)) : null,
+        max: spread > 0
+            ? double.parse((value + spread).toStringAsFixed(1))
+            : null,
       ));
     }
     Threshold? threshold;

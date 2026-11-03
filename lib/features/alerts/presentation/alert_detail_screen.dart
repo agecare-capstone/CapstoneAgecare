@@ -85,23 +85,29 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
     }
   }
 
-  /// Pide la nota de cierre (obligatoria en alertas críticas). null = cancelar.
-  Future<String?> _askResolutionNote() {
+  /// Pide la nota de cierre (obligatoria en alertas críticas y al descartar
+  /// una falsa alarma). null = cancelar.
+  Future<String?> _askResolutionNote({
+    String title = 'Resolver alerta',
+    String label = '¿Cómo se atendió?',
+    String hint = 'Ej.: Ya está acostada, sin golpes visibles.',
+    String action = 'Resolver',
+  }) {
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Resolver alerta'),
+          title: Text(title),
           content: TextField(
             controller: controller,
             autofocus: true,
             maxLength: 300,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: '¿Cómo se atendió?',
-              hintText: 'Ej.: Ya está acostada, sin golpes visibles.',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: label,
+              hintText: hint,
+              border: const OutlineInputBorder(),
             ),
             onChanged: (_) => setLocal(() {}),
           ),
@@ -114,7 +120,7 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
               onPressed: controller.text.trim().isEmpty
                   ? null
                   : () => Navigator.of(ctx).pop(controller.text.trim()),
-              child: const Text('Resolver'),
+              child: Text(action),
             ),
           ],
         ),
@@ -131,6 +137,23 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
     await _run(
         () => ref.read(alertsRepositoryProvider).resolve(alert.id, note: note),
         'Alerta resuelta. Avisamos al resto del grupo.');
+  }
+
+  /// "Confirmar falsa alarma" (DAC05-85): cierra la alerta con una
+  /// justificación obligatoria que queda registrada en el backend.
+  Future<void> _confirmFalseAlarm(Alert alert) async {
+    final note = await _askResolutionNote(
+      title: 'Confirmar falsa alarma',
+      label: '¿Por qué es una falsa alarma?',
+      hint: 'Ej.: Se le cayó el reloj; ella está bien.',
+      action: 'Confirmar',
+    );
+    if (note == null) return;
+    await _run(
+        () => ref
+            .read(alertsRepositoryProvider)
+            .resolve(alert.id, note: note, falseAlarm: true),
+        'Marcada como falsa alarma. Avisamos al resto del grupo.');
   }
 
   @override
@@ -182,6 +205,9 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
                 () => ref.read(alertsRepositoryProvider).acknowledge(alert.id),
                 'Alerta reconocida'),
             onResolve: () => _resolve(alert),
+            onFalseAlarm: alert.severity == AlertSeverity.critical
+                ? () => _confirmFalseAlarm(alert)
+                : null,
           );
         },
       ),
@@ -198,6 +224,7 @@ class _AlertDetailBody extends StatelessWidget {
     required this.onCallEmergency,
     required this.onAcknowledge,
     required this.onResolve,
+    this.onFalseAlarm,
   });
 
   final Alert alert;
@@ -211,6 +238,9 @@ class _AlertDetailBody extends StatelessWidget {
   final VoidCallback onCallEmergency;
   final VoidCallback onAcknowledge;
   final VoidCallback onResolve;
+
+  /// Solo en alertas críticas (caída, SOS).
+  final VoidCallback? onFalseAlarm;
 
   @override
   Widget build(BuildContext context) {
@@ -341,6 +371,8 @@ class _AlertDetailBody extends StatelessWidget {
                 _DetailRow(
                     'Resuelta',
                     DateFormat('dd/MM HH:mm').format(alert.resolvedAt!.toLocal())),
+              if (alert.resolutionNote != null)
+                _DetailRow('Nota', alert.resolutionNote!),
               ...?_metaRows(alert.meta),
             ],
           ),
@@ -369,6 +401,14 @@ class _AlertDetailBody extends StatelessWidget {
                 : const Icon(Icons.task_alt_rounded),
             label: const Text('Resolver alerta'),
           ),
+          if (onFalseAlarm != null) ...[
+            const SizedBox(height: 4),
+            TextButton.icon(
+              onPressed: busy ? null : onFalseAlarm,
+              icon: const Icon(Icons.do_not_disturb_on_outlined),
+              label: const Text('Confirmar falsa alarma'),
+            ),
+          ],
         ] else
           Container(
             padding: const EdgeInsets.all(16),
@@ -376,13 +416,17 @@ class _AlertDetailBody extends StatelessWidget {
               color: AppColors.statusOk.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.check_circle_rounded, color: AppColors.statusOk),
-                SizedBox(width: 10),
+                const Icon(Icons.check_circle_rounded,
+                    color: AppColors.statusOk),
+                const SizedBox(width: 10),
                 Expanded(
-                    child: Text('Esta alerta ya fue resuelta.',
-                        style: TextStyle(
+                    child: Text(
+                        alert.falseAlarm
+                            ? 'Descartada como falsa alarma.'
+                            : 'Esta alerta ya fue resuelta.',
+                        style: const TextStyle(
                             color: AppColors.statusOk,
                             fontWeight: FontWeight.w600))),
               ],

@@ -57,7 +57,9 @@ class _AgeCareAppState extends ConsumerState<AgeCareApp> {
     final platform =
         defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
     try {
-      await ref.read(profileRepositoryProvider).registerDevice(token, platform);
+      PushService.instance.deviceId = await ref
+          .read(profileRepositoryProvider)
+          .registerDevice(token, platform);
     } catch (_) {
       // Sin red o backend caído: se reintenta en el próximo inicio de sesión.
     }

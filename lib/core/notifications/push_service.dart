@@ -38,6 +38,9 @@ class PushService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
+  /// device_id que asignó el backend al registrar el token en esta sesión.
+  String? deviceId;
+
   bool _initialized = false;
 
   Future<void> init({required bool enableRemote}) async {

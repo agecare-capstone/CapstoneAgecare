@@ -93,7 +93,34 @@ void main() {
     await tester.tap(saveButton(VitalType.heartRate));
     await tester.pumpAndSettle();
 
-    expect(find.text('El mínimo no puede ser mayor que el máximo.'), findsOneWidget);
+    expect(find.text('El mínimo debe ser menor que el máximo.'), findsOneWidget);
+    expect(repo.saved, isEmpty);
+  });
+
+  testWidgets('un mínimo igual al máximo tampoco se guarda (DAC05-199)',
+      (tester) async {
+    final repo = await pumpScreen(tester, RoleType.family);
+
+    await tester.enterText(field(VitalType.heartRate, 'Mínimo'), '110');
+    await tester.pump();
+    await tester.tap(saveButton(VitalType.heartRate));
+    await tester.pumpAndSettle();
+
+    expect(find.text('El mínimo debe ser menor que el máximo.'), findsOneWidget);
+    expect(repo.saved, isEmpty);
+  });
+
+  testWidgets('sin mínimo ni máximo no se guarda', (tester) async {
+    final repo = await pumpScreen(tester, RoleType.family);
+
+    await tester.enterText(field(VitalType.heartRate, 'Mínimo'), '');
+    await tester.enterText(field(VitalType.heartRate, 'Máximo'), '');
+    await tester.pump();
+    await tester.tap(saveButton(VitalType.heartRate));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Indica al menos un valor mínimo o máximo.'),
+        findsOneWidget);
     expect(repo.saved, isEmpty);
   });
 

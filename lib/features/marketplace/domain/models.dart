@@ -1,5 +1,6 @@
 /// Modelos del Marketplace: cuidadoras, productos/ayudas técnicas, ofertas de
 /// trabajo y reseñas. JSON en snake_case, fechas ISO8601.
+library;
 
 /// Resumen de perfil de cuidadora para el listado.
 class CaregiverProfileSummary {

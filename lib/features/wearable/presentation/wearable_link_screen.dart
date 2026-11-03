@@ -123,7 +123,7 @@ class _WearableLinkScreenState extends ConsumerState<WearableLinkScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final providers = spike.Provider.values;
+    const providers = spike.Provider.values;
     return Scaffold(
       appBar: AppBar(title: const Text('Vincular wearable')),
       body: ListView(
@@ -187,8 +187,8 @@ class _WearableLinkScreenState extends ConsumerState<WearableLinkScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.favorite_rounded, color: AppColors.primary),
                       SizedBox(width: 10),
                       Expanded(
@@ -280,12 +280,12 @@ class _WearableLinkScreenState extends ConsumerState<WearableLinkScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(.06),
+                color: AppColors.primary.withValues(alpha: .06),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Icon(Icons.info_outline_rounded,
                       size: 20, color: AppColors.primary),
                   SizedBox(width: 10),

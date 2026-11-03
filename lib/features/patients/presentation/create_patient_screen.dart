@@ -118,7 +118,7 @@ class _CreatePatientScreenState extends ConsumerState<CreatePatientScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _sex,
+                  initialValue: _sex,
                   decoration: const InputDecoration(
                       labelText: 'Sexo (opcional)', prefixIcon: Icon(Icons.wc_outlined)),
                   items: const [

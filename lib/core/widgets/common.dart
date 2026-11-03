@@ -82,7 +82,7 @@ class EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: AppColors.primary.withOpacity(.4)),
+            Icon(icon, size: 56, color: AppColors.primary.withValues(alpha: .4)),
             const SizedBox(height: 16),
             Text(title,
                 textAlign: TextAlign.center,
@@ -121,7 +121,7 @@ class InitialsAvatar extends StatelessWidget {
         .join();
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppColors.primary.withOpacity(.15),
+      backgroundColor: AppColors.primary.withValues(alpha: .15),
       child: Text(initials,
           style: TextStyle(
               color: AppColors.primaryDark,
@@ -143,7 +143,7 @@ class WellbeingChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: large ? 16 : 10, vertical: large ? 8 : 5),
       decoration: BoxDecoration(
-        color: status.color.withOpacity(.12),
+        color: status.color.withValues(alpha: .12),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

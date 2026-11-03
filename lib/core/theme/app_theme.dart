@@ -88,9 +88,9 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primary.withOpacity(.12),
-        labelTextStyle: WidgetStatePropertyAll(
-          const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        indicatorColor: AppColors.primary.withValues(alpha: .12),
+        labelTextStyle: const WidgetStatePropertyAll(
+          TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ),
       dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),

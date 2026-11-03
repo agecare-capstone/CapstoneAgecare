@@ -186,7 +186,7 @@ class _TodayCard extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.statusAttention.withOpacity(.08),
+                      color: AppColors.statusAttention.withValues(alpha: .08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -391,8 +391,8 @@ class _WearableCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Icon(Icons.watch_off_outlined,
                       color: AppColors.textSecondary),
                   SizedBox(width: 12),

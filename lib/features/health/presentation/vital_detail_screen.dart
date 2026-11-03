@@ -126,7 +126,7 @@ class _MinMaxLegend extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (var i = 0; i < 3; i++) ...[
-          Container(width: 5, height: 2, color: AppColors.textSecondary.withOpacity(.6)),
+          Container(width: 5, height: 2, color: AppColors.textSecondary.withValues(alpha: .6)),
           if (i < 2) const SizedBox(width: 3),
         ],
         const SizedBox(width: 6),
@@ -186,7 +186,7 @@ class _TrendChart extends StatelessWidget {
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(
+          leftTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: true, reservedSize: 42),
           ),
           bottomTitles: AxisTitles(
@@ -228,7 +228,7 @@ class _TrendChart extends StatelessWidget {
               spots: minSpots,
               isCurved: true,
               curveSmoothness: .25,
-              color: AppColors.textSecondary.withOpacity(.6),
+              color: AppColors.textSecondary.withValues(alpha: .6),
               barWidth: 1,
               dotData: const FlDotData(show: false),
               dashArray: [4, 3],
@@ -237,7 +237,7 @@ class _TrendChart extends StatelessWidget {
               spots: maxSpots,
               isCurved: true,
               curveSmoothness: .25,
-              color: AppColors.textSecondary.withOpacity(.6),
+              color: AppColors.textSecondary.withValues(alpha: .6),
               barWidth: 1,
               dotData: const FlDotData(show: false),
               dashArray: [4, 3],
@@ -252,7 +252,7 @@ class _TrendChart extends StatelessWidget {
             dotData: FlDotData(show: points.length <= 14),
             belowBarData: BarAreaData(
               show: true,
-              color: AppColors.primary.withOpacity(.08),
+              color: AppColors.primary.withValues(alpha: .08),
             ),
           ),
         ],

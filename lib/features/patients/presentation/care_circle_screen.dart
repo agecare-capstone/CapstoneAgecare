@@ -153,7 +153,7 @@ class _CareCircleScreenState extends ConsumerState<CareCircleScreen> {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: AppColors.primary.withOpacity(0.12),
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                           child: const Icon(
                             Icons.elderly_rounded,
                             color: AppColors.primary,
@@ -236,8 +236,8 @@ class _CareCircleScreenState extends ConsumerState<CareCircleScreen> {
           children: [
             CircleAvatar(
               backgroundColor: m.isPending
-                  ? AppColors.statusWarning.withOpacity(0.15)
-                  : AppColors.primary.withOpacity(0.12),
+                  ? AppColors.statusWarning.withValues(alpha: 0.15)
+                  : AppColors.primary.withValues(alpha: 0.12),
               child: Icon(
                 _getRoleIcon(m.role),
                 color: m.isPending
@@ -328,15 +328,15 @@ class _CareCircleScreenState extends ConsumerState<CareCircleScreen> {
     Color fg;
     switch (status) {
       case InvitationState.accepted:
-        bg = AppColors.statusOk.withOpacity(0.12);
+        bg = AppColors.statusOk.withValues(alpha: 0.12);
         fg = AppColors.statusOk;
         break;
       case InvitationState.pending:
-        bg = AppColors.statusWarning.withOpacity(0.12);
+        bg = AppColors.statusWarning.withValues(alpha: 0.12);
         fg = AppColors.statusWarning;
         break;
       case InvitationState.expired:
-        bg = AppColors.critical.withOpacity(0.12);
+        bg = AppColors.critical.withValues(alpha: 0.12);
         fg = AppColors.critical;
         break;
     }

@@ -92,7 +92,7 @@ class ChatRepositoryHttp implements ChatRepository {
     final token = await _tokens.accessToken;
 
     // Construimos la URL ws/wss a partir de la base HTTP.
-    final httpBase = AppConfig.apiBaseUrl + AppConfig.apiVersion;
+    const httpBase = AppConfig.apiBaseUrl + AppConfig.apiVersion;
     final wsBase = httpBase
         .replaceFirst('https://', 'wss://')
         .replaceFirst('http://', 'ws://');

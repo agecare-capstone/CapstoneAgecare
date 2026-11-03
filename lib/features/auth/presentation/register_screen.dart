@@ -60,7 +60,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     margin: const EdgeInsets.only(bottom: 20),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(.15),
+                      color: AppColors.secondary.withValues(alpha: .15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: const Row(

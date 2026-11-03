@@ -132,8 +132,8 @@ class _ThresholdCardState extends ConsumerState<ThresholdCard> {
     if (min == null && max == null) {
       return 'Indica al menos un valor mínimo o máximo.';
     }
-    if (min != null && max != null && min > max) {
-      return 'El mínimo no puede ser mayor que el máximo.';
+    if (min != null && max != null && min >= max) {
+      return 'El mínimo debe ser menor que el máximo.';
     }
     return null;
   }

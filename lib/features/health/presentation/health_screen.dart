@@ -124,7 +124,7 @@ class _VitalCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(.1),
+              color: color.withValues(alpha: .1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(vital.type.icon, color: color, size: 26),

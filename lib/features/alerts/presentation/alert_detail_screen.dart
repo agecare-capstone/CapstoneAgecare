@@ -143,7 +143,7 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
 
     return Scaffold(
       backgroundColor:
-          emergency ? AppColors.critical.withOpacity(.06) : null,
+          emergency ? AppColors.critical.withValues(alpha: .06) : null,
       appBar: AppBar(
         title: Text(emergency ? 'Caída detectada' : 'Detalle de alerta'),
         backgroundColor: emergency ? AppColors.critical : null,
@@ -225,9 +225,9 @@ class _AlertDetailBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(.10),
+            color: color.withValues(alpha: .10),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withOpacity(.4)),
+            border: Border.all(color: color.withValues(alpha: .4)),
           ),
           child: Row(
             children: [
@@ -260,8 +260,8 @@ class _AlertDetailBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.priority_high_rounded, color: AppColors.critical),
                     SizedBox(width: 8),
                     Expanded(
@@ -313,7 +313,7 @@ class _AlertDetailBody extends StatelessWidget {
         ],
 
         // Mensaje / contexto
-        _SectionTitle('¿Qué ocurrió?'),
+        const _SectionTitle('¿Qué ocurrió?'),
         const SizedBox(height: 6),
         AppCard(
           child: Text(alert.message,
@@ -322,7 +322,7 @@ class _AlertDetailBody extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Detalles
-        _SectionTitle('Detalles'),
+        const _SectionTitle('Detalles'),
         const SizedBox(height: 6),
         AppCard(
           child: Column(
@@ -373,7 +373,7 @@ class _AlertDetailBody extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.statusOk.withOpacity(.10),
+              color: AppColors.statusOk.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Row(

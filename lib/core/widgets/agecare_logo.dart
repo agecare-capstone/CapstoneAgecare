@@ -46,7 +46,7 @@ class AgeCareLogo extends StatelessWidget {
                 TextSpan(
                   text: '.',
                   style: TextStyle(
-                    color: Color(0xFFFF7A3D),
+                    color: const Color(0xFFFF7A3D),
                     fontSize: size * 1.1,
                   ),
                 ),

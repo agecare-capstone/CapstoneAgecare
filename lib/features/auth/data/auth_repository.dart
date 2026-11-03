@@ -104,11 +104,11 @@ class AuthRepositoryMock implements AuthRepository {
 
   User? _currentUser;
 
-  static final _demoUser = User(
+  static const _demoUser = User(
     userId: 'u-demo-1',
     fullName: 'María González',
     email: demoEmail,
-    memberships: const [
+    memberships: [
       Membership(patientId: 'p-elena', patientName: 'Elena', role: RoleType.family),
       Membership(patientId: 'p-jose', patientName: 'José', role: RoleType.family),
     ],
@@ -125,7 +125,7 @@ class AuthRepositoryMock implements AuthRepository {
       );
     }
     _currentUser = _demoUser;
-    return AuthSession(user: _demoUser, accessToken: 'mock-access', refreshToken: 'mock-refresh');
+    return const AuthSession(user: _demoUser, accessToken: 'mock-access', refreshToken: 'mock-refresh');
   }
 
   @override

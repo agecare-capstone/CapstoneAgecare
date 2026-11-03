@@ -176,7 +176,7 @@ class _PhotoCard extends StatelessWidget {
                 photo.url,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.primary.withOpacity(.06),
+                  color: AppColors.primary.withValues(alpha: .06),
                   alignment: Alignment.center,
                   child: const Icon(Icons.broken_image_rounded,
                       size: 56, color: AppColors.textSecondary),
@@ -262,7 +262,7 @@ class _ReactionButton extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: color.withOpacity(.12),
+        color: color.withValues(alpha: .12),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),

@@ -8,6 +8,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../auth/domain/models.dart';
+import '../../patients/application/patients_providers.dart';
 import '../../patients/data/patients_repository.dart';
 import '../application/alerts_providers.dart';
 import '../data/alerts_repository.dart';
@@ -162,12 +163,18 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
               subtitle: 'Es posible que ya haya sido resuelta o eliminada.',
             );
           }
-          final caregiverPhone = alert.type == AlertType.fall
-              ? ref.watch(caregiverPhoneProvider(alert.patientId)).valueOrNull
-              : null;
+          // La cuidadora no se llama a sí misma: ella solo ve el 131.
+          final myPatients = ref.watch(myPatientsProvider).valueOrNull ?? [];
+          final viewerIsCaregiver = myPatients.any((p) =>
+              p.patientId == alert.patientId && p.role == RoleType.caregiver);
+          final caregiverPhone =
+              alert.type == AlertType.fall && !viewerIsCaregiver
+                  ? ref.watch(caregiverPhoneProvider(alert.patientId)).valueOrNull
+                  : null;
           return _AlertDetailBody(
             alert: alert,
             busy: _busy,
+            viewerIsCaregiver: viewerIsCaregiver,
             onCallCaregiver:
                 caregiverPhone == null ? null : () => _call(caregiverPhone),
             onCallEmergency: () => _call(emergencyNumber),
@@ -186,6 +193,7 @@ class _AlertDetailBody extends StatelessWidget {
   const _AlertDetailBody({
     required this.alert,
     required this.busy,
+    this.viewerIsCaregiver = false,
     required this.onCallCaregiver,
     required this.onCallEmergency,
     required this.onAcknowledge,
@@ -194,6 +202,9 @@ class _AlertDetailBody extends StatelessWidget {
 
   final Alert alert;
   final bool busy;
+
+  /// Quien mira la alerta es la cuidadora del paciente.
+  final bool viewerIsCaregiver;
 
   /// null si no hay cuidadora con teléfono registrado.
   final VoidCallback? onCallCaregiver;
@@ -262,24 +273,29 @@ class _AlertDetailBody extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Llama a la cuidadora para confirmar el estado del adulto mayor. '
-                  'Si no responde o hay lesiones, llama a emergencias.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                Text(
+                  viewerIsCaregiver
+                      ? 'Revisa al adulto mayor ahora. '
+                          'Si no responde o hay lesiones, llama a emergencias.'
+                      : 'Llama a la cuidadora para confirmar el estado del adulto mayor. '
+                          'Si no responde o hay lesiones, llama a emergencias.',
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 14),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.critical,
-                    minimumSize: const Size.fromHeight(52),
+                if (!viewerIsCaregiver)
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.critical,
+                      minimumSize: const Size.fromHeight(52),
+                    ),
+                    onPressed: onCallCaregiver,
+                    icon: const Icon(Icons.call_rounded),
+                    label: Text(onCallCaregiver == null
+                        ? 'Cuidadora sin teléfono registrado'
+                        : 'Llamar a Cuidadora'),
                   ),
-                  onPressed: onCallCaregiver,
-                  icon: const Icon(Icons.call_rounded),
-                  label: Text(onCallCaregiver == null
-                      ? 'Cuidadora sin teléfono registrado'
-                      : 'Llamar a Cuidadora'),
-                ),
-                const SizedBox(height: 10),
+                if (!viewerIsCaregiver) const SizedBox(height: 10),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.critical,

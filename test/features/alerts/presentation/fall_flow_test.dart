@@ -6,7 +6,10 @@ import 'package:agecare_app/app.dart';
 import 'package:agecare_app/core/theme/app_theme.dart';
 import 'package:agecare_app/features/alerts/data/alerts_repository.dart';
 import 'package:agecare_app/features/alerts/presentation/alert_detail_screen.dart';
+import 'package:agecare_app/features/auth/domain/models.dart';
+import 'package:agecare_app/features/patients/application/patients_providers.dart';
 import 'package:agecare_app/features/patients/data/patients_repository.dart';
+import 'package:agecare_app/features/patients/domain/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,12 +35,21 @@ void main() {
     expect(routeForNotification({'type': 'chat'}), isNull);
   });
 
-  Future<_RecordingAlertsRepo> pumpFall(WidgetTester tester) async {
+  Future<_RecordingAlertsRepo> pumpFall(WidgetTester tester,
+      {RoleType role = RoleType.family}) async {
     final repo = _RecordingAlertsRepo();
     await tester.pumpWidget(ProviderScope(
       overrides: [
         alertsRepositoryProvider.overrideWithValue(repo),
         patientsRepositoryProvider.overrideWithValue(PatientsRepositoryMock()),
+        myPatientsProvider.overrideWith((ref) async => [
+              PatientCard(
+                patientId: 'p-elena',
+                fullName: 'Elena Ramírez',
+                role: role,
+                wellbeingStatus: WellbeingStatus.ok,
+              ),
+            ]),
       ],
       child: MaterialApp(
           theme: AppTheme.light(),
@@ -59,6 +71,16 @@ void main() {
     final caregiver = find.widgetWithText(FilledButton, 'Llamar a Cuidadora');
     expect(caregiver, findsOneWidget);
     expect(tester.widget<FilledButton>(caregiver).onPressed, isNotNull);
+    expect(find.widgetWithText(OutlinedButton, 'Llamar a Emergencias (131)'),
+        findsOneWidget);
+  });
+
+  testWidgets('la cuidadora no ve "Llamar a Cuidadora", solo el 131',
+      (tester) async {
+    await pumpFall(tester, role: RoleType.caregiver);
+
+    expect(find.textContaining('Llamar a Cuidadora'), findsNothing);
+    expect(find.textContaining('Cuidadora sin teléfono'), findsNothing);
     expect(find.widgetWithText(OutlinedButton, 'Llamar a Emergencias (131)'),
         findsOneWidget);
   });

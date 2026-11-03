@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/wearable/health_connect_sync.dart';
+import '../alerts/presentation/sos_button.dart';
 import '../auth/application/auth_controller.dart';
 import '../auth/domain/models.dart';
 import '../caregiver/presentation/caregiver_log_screen.dart';
@@ -72,10 +73,17 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       return const ElderHomeScreen();
     }
 
-    final tabs = role == RoleType.caregiver ? _caregiverTabs : _familyTabs;
+    final isCaregiver = role == RoleType.caregiver;
+    final tabs = isCaregiver ? _caregiverTabs : _familyTabs;
     final safeIndex = _index.clamp(0, tabs.length - 1);
+    final hasPatient = ref.watch(selectedPatientProvider) != null;
 
     return Scaffold(
+      // AGE-506: la cuidadora tiene el SOS en todas sus pestañas. Va a la
+      // izquierda para no tapar los botones propios de cada pantalla
+      // (p. ej. "Nueva tarea").
+      floatingActionButton: isCaregiver && hasPatient ? const SosButton() : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: SafeArea(
         bottom: false,
         child: Column(

@@ -79,7 +79,7 @@ jobs:
         run: |
           flutter build apk --release \
           --dart-define=USE_MOCKS=false \
-          --dart-define=API_BASE_URL=https://agecare.open-cluster.org
+          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL || 'https://agecare-api-xnjbc.azurewebsites.net' }}
 
       - name: 📤 Subir APK compilado a Artifacts
         uses: actions/upload-artifact@v4

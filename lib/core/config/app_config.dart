@@ -13,10 +13,11 @@ class AppConfig {
   static const bool useMocks =
       bool.fromEnvironment('USE_MOCKS', defaultValue: true);
 
+  /// Backend AgeCare en Azure. Para usar el backend de otro equipo que siga
+  /// el contrato de Alloxentric basta con --dart-define=API_BASE_URL=...
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    // defaultValue: 'https://api-dev.agecare.app', // (Endpoint de produccion)
-    defaultValue: 'https://agecare.open-cluster.org', // (Endpoint desarrollo)
+    defaultValue: 'https://agecare-api-xnjbc.azurewebsites.net',
   );
 
   /// Application ID de Spike API (https://docs.spikeapi.com).

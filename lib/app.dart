@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,8 @@ import 'core/config/app_config.dart';
 import 'core/notifications/push_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/application/auth_controller.dart';
+import 'features/profile/data/profile_repository.dart';
 
 /// Ruta a la que lleva el toque en una notificación, o null si no aplica.
 /// Una alerta (p. ej. caída, AGE-505) abre su pantalla de acción inmediata.
@@ -46,6 +49,22 @@ class _AgeCareAppState extends ConsumerState<AgeCareApp> {
     if (route != null) ref.read(goRouterProvider).push(route);
   }
 
+  /// Envía el token FCM al backend para que pueda mandarle push a este
+  /// usuario (caídas, SOS) aunque la app esté cerrada (DAC05-193).
+  Future<void> _registerPushToken() async {
+    final token = PushService.instance.fcmToken;
+    if (token == null || kIsWeb) return;
+    final platform =
+        defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+    try {
+      PushService.instance.deviceId = await ref
+          .read(profileRepositoryProvider)
+          .registerDevice(token, platform);
+    } catch (_) {
+      // Sin red o backend caído: se reintenta en el próximo inicio de sesión.
+    }
+  }
+
   @override
   void dispose() {
     _taps?.cancel();
@@ -55,6 +74,9 @@ class _AgeCareAppState extends ConsumerState<AgeCareApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
+    ref.listen<AuthState>(authControllerProvider, (prev, next) {
+      if (next is Authenticated && prev is! Authenticated) _registerPushToken();
+    });
 
     return MaterialApp.router(
       title: AppConfig.appName,

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/notifications/push_service.dart';
 import '../data/auth_repository.dart';
 import '../domain/models.dart';
 
@@ -89,9 +90,11 @@ class AuthController extends Notifier<AuthState> {
     final refresh = await tokens.refreshToken;
     if (refresh != null) {
       try {
-        await _repo.logout(refresh);
+        // Desactiva el push de este teléfono para la cuenta que sale.
+        await _repo.logout(refresh, deviceId: PushService.instance.deviceId);
       } catch (_) {/* best effort */}
     }
+    PushService.instance.deviceId = null;
     await tokens.clear();
     state = const Unauthenticated();
   }

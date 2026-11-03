@@ -13,6 +13,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// google-services.json no se sube al repo (es público): sin él la app compila
+// igual, pero sin push remoto.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.agecare.agecare_app"
     compileSdk = flutter.compileSdkVersion

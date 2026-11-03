@@ -70,3 +70,6 @@ web
 
 # Archivos temporales de Office (se crean mientras un documento está abierto)
 ~$*
+
+# Configuración de Firebase (cada dev la descarga de la consola).
+android/app/google-services.json

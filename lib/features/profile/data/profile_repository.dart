@@ -13,7 +13,8 @@ abstract class ProfileRepository {
   });
   Future<NotificationSettings> getNotificationSettings();
   Future<void> updateNotificationSettings(NotificationSettings settings);
-  Future<void> registerDevice(String token, String platform);
+  /// Registra el token push del dispositivo; devuelve su device_id.
+  Future<String?> registerDevice(String token, String platform);
 }
 
 // ---------------------------------------------------------------------------
@@ -50,9 +51,11 @@ class ProfileRepositoryHttp implements ProfileRepository {
           data: settings.toJson());
 
   @override
-  Future<void> registerDevice(String token, String platform) =>
-      _api.post<void>('/users/me/devices',
-          data: {'token': token, 'platform': platform});
+  Future<String?> registerDevice(String token, String platform) async {
+    final res = await _api.post<Map<String, dynamic>>('/users/me/devices',
+        data: {'token': token, 'platform': platform});
+    return res['device_id'] as String?;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -84,8 +87,9 @@ class ProfileRepositoryMock implements ProfileRepository {
   }
 
   @override
-  Future<void> registerDevice(String token, String platform) async {
+  Future<String?> registerDevice(String token, String platform) async {
     await Future.delayed(const Duration(milliseconds: 200));
+    return 'dev-mock';
   }
 }
 

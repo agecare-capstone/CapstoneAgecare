@@ -280,7 +280,7 @@ class _HelpButton extends StatelessWidget {
       button: true,
       label: 'Ayuda. Escuchar cómo usar esta pantalla.',
       child: Material(
-        color: AppColors.primary.withOpacity(.12),
+        color: AppColors.primary.withValues(alpha: .12),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),

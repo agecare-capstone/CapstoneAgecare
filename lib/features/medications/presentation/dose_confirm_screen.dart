@@ -100,7 +100,7 @@ class _DoseConfirmBodyState extends ConsumerState<_DoseConfirmBody> {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(.1),
+                color: AppColors.primary.withValues(alpha: .1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.medication_rounded,
@@ -108,7 +108,7 @@ class _DoseConfirmBodyState extends ConsumerState<_DoseConfirmBody> {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Hora de tu medicamento',
+          const Text('Hora de tu medicamento',
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 18,

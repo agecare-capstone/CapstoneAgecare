@@ -18,10 +18,14 @@ import 'package:flutter_test/flutter_test.dart';
 class _RecordingAlertsRepo extends AlertsRepositoryMock {
   final notes = <String?>[];
 
+  final falseAlarms = <bool>[];
+
   @override
-  Future<void> resolve(String alertId, {String? note}) {
+  Future<void> resolve(String alertId,
+      {String? note, bool falseAlarm = false}) {
     notes.add(note);
-    return super.resolve(alertId, note: note);
+    falseAlarms.add(falseAlarm);
+    return super.resolve(alertId, note: note, falseAlarm: falseAlarm);
   }
 }
 
@@ -102,6 +106,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repo.notes, ['Ya está acostada, sin golpes']);
+    // Deja que se cierre el aviso de confirmación.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('confirmar falsa alarma exige justificación y queda registrada',
+      (tester) async {
+    final repo = await pumpFall(tester);
+
+    await tester.scrollUntilVisible(find.text('Confirmar falsa alarma'), 200);
+    await tester.tap(find.text('Confirmar falsa alarma'));
+    await tester.pumpAndSettle();
+
+    // Sin justificación, "Confirmar" está deshabilitado.
+    final confirm = find.widgetWithText(FilledButton, 'Confirmar');
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField), 'Se le cayó el reloj al velador');
+    await tester.pump();
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+
+    expect(repo.falseAlarms, [true]);
+    expect(repo.notes, ['Se le cayó el reloj al velador']);
+    await tester.scrollUntilVisible(
+        find.text('Descartada como falsa alarma.'), 200);
+    expect(find.text('Descartada como falsa alarma.'), findsOneWidget);
     // Deja que se cierre el aviso de confirmación.
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();

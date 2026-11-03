@@ -13,7 +13,8 @@ abstract class AlertsRepository {
   Future<void> acknowledge(String alertId);
 
   /// Resuelve una alerta, con nota opcional.
-  Future<void> resolve(String alertId, {String? note});
+  /// [falseAlarm]: descarta la alerta como falsa alarma; exige [note] (DAC05-85).
+  Future<void> resolve(String alertId, {String? note, bool falseAlarm = false});
 
   /// Envía una alerta SOS para el paciente indicado.
   Future<void> sendSos(String patientId, {double? lat, double? lng, String? note});
@@ -46,9 +47,14 @@ class AlertsRepositoryHttp implements AlertsRepository {
       _api.post<void>('/alerts/$alertId/acknowledge');
 
   @override
-  Future<void> resolve(String alertId, {String? note}) => _api.post<void>(
+  Future<void> resolve(String alertId,
+          {String? note, bool falseAlarm = false}) =>
+      _api.post<void>(
         '/alerts/$alertId/resolve',
-        data: {if (note != null && note.isNotEmpty) 'note': note},
+        data: {
+          if (note != null && note.isNotEmpty) 'note': note,
+          if (falseAlarm) 'false_alarm': true,
+        },
       );
 
   @override
@@ -162,7 +168,8 @@ class AlertsRepositoryMock implements AlertsRepository {
   }
 
   @override
-  Future<void> resolve(String alertId, {String? note}) async {
+  Future<void> resolve(String alertId,
+      {String? note, bool falseAlarm = false}) async {
     await Future.delayed(const Duration(milliseconds: 300));
     final i = _alerts.indexWhere((a) => a.id == alertId);
     if (i == -1) {
@@ -174,6 +181,8 @@ class AlertsRepositoryMock implements AlertsRepository {
     _alerts[i] = _alerts[i].copyWith(
       status: AlertStatus.resolved,
       resolvedAt: DateTime.now(),
+      resolutionNote: note,
+      falseAlarm: falseAlarm,
     );
   }
 

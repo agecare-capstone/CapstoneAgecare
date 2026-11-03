@@ -48,6 +48,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.10
   health: ^13.3.1
+  meta: ^1.15.0                        # @visibleForTesting en api_client.dart
 
 dev_dependencies:
   flutter_test:

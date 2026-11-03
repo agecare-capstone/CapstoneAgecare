@@ -43,7 +43,7 @@ jobs:
         run: flutter pub get
 
       - name: 🔍 Analyze code (Linter)
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --fatal-infos  # DAC05-199: cero advertencias
 
       - name: 🧪 Run unit and widget tests
         run: flutter test

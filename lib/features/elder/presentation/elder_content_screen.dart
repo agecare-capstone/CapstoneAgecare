@@ -74,7 +74,7 @@ class _ContentCard extends StatelessWidget {
                   item.imageUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    color: item.type.color.withOpacity(.08),
+                    color: item.type.color.withValues(alpha: .08),
                   ),
                 ),
               ),
@@ -89,7 +89,7 @@ class _ContentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: item.type.color.withOpacity(.12),
+                        color: item.type.color.withValues(alpha: .12),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(item.type.icon,

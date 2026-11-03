@@ -278,7 +278,7 @@ class _ProductCard extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(.08),
+              color: AppColors.primary.withValues(alpha: .08),
               borderRadius: BorderRadius.circular(12),
               image: product.imageUrl != null
                   ? DecorationImage(
@@ -438,7 +438,7 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(.08),
+        color: AppColors.primary.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(label,

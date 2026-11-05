@@ -120,6 +120,7 @@ class PatientsRepositoryMock implements PatientsRepository {
       birthDate: DateTime(1948, 3, 12),
       sex: 'female',
       conditions: const ['Hipertensión', 'Artrosis'],
+      address: 'Av. Irarrázaval 2850, depto. 304, Ñuñoa',
       wearable: WearableStatus(
         wearableId: 'w-1',
         lastSyncAt: DateTime.now().subtract(const Duration(minutes: 18)),
@@ -227,6 +228,7 @@ class PatientsRepositoryMock implements PatientsRepository {
       sex: data.sex,
       conditions: data.conditions,
       notes: data.notes,
+      address: data.address,
     );
     _patients[id] = patient;
     return patient;

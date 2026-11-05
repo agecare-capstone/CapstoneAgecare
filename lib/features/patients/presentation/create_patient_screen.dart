@@ -24,6 +24,7 @@ class _CreatePatientScreenState extends ConsumerState<CreatePatientScreen> {
   final _name = TextEditingController();
   final _conditions = TextEditingController();
   final _notes = TextEditingController();
+  final _address = TextEditingController();
   DateTime? _birthDate;
   String? _sex;
   bool _loading = false;
@@ -59,6 +60,7 @@ class _CreatePatientScreenState extends ConsumerState<CreatePatientScreen> {
                   .where((c) => c.isNotEmpty)
                   .toList(),
               notes: _notes.text.trim(),
+              address: _address.text.trim(),
             ),
           );
       ref.invalidate(myPatientsProvider);
@@ -135,6 +137,17 @@ class _CreatePatientScreenState extends ConsumerState<CreatePatientScreen> {
                     labelText: 'Padecimientos (separados por coma)',
                     prefixIcon: Icon(Icons.medical_information_outlined),
                     helperText: 'Ej. hipertensión, diabetes',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _address,
+                  maxLength: 255,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Domicilio (opcional)',
+                    prefixIcon: Icon(Icons.home_outlined),
+                    helperText: 'Se muestra a la familia si se detecta una caída',
                   ),
                 ),
                 const SizedBox(height: 16),

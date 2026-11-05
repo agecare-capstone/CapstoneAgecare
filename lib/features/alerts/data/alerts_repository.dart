@@ -89,7 +89,12 @@ class AlertsRepositoryMock implements AlertsRepository {
             'Confirma el estado de Elena lo antes posible.',
         createdAt: now.subtract(const Duration(minutes: 4)),
         status: AlertStatus.active,
-        meta: const {'location': 'Domicilio', 'confidence': 0.88},
+        meta: const {
+          'location': 'Domicilio',
+          'confidence': 0.88,
+          'lat': -33.45420,
+          'lng': -70.60110,
+        },
       ),
       Alert(
         id: 'a-hr-1',

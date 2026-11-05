@@ -72,6 +72,12 @@ class PushService {
           if (payload != null) _taps.add(_parse(payload));
         },
       );
+      // Canal de máxima prioridad para caídas y SOS: el backend lo usa en el
+      // push (channel_id critical_alerts) para que suene aun con la app cerrada.
+      await _local
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(criticalChannel);
       final launch = await _local.getNotificationAppLaunchDetails();
       final launchPayload = launch?.notificationResponse?.payload;
       if (launch?.didNotificationLaunchApp == true && launchPayload != null) {
@@ -89,18 +95,25 @@ class PushService {
         _fcmToken = await messaging.getToken();
         messaging.onTokenRefresh.listen((t) => _fcmToken = t);
         FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-        FirebaseMessaging.onMessageOpenedApp
-            .listen((m) => _taps.add(Map<String, dynamic>.from(m.data)));
+        FirebaseMessaging.onMessageOpenedApp.listen((m) => _taps.add(tapData(m)));
         final initial = await messaging.getInitialMessage();
-        if (initial != null) {
-          _initialTap = Map<String, dynamic>.from(initial.data);
-        }
+        if (initial != null) _initialTap = tapData(initial);
       } catch (e) {
         // Sin configuración Firebase (o en desarrollo): las notificaciones
         // locales siguen funcionando.
         _fcmToken = null;
       }
     }
+  }
+
+  /// Datos de navegación de un push tocado: van a [routeForNotification].
+  static Map<String, dynamic> tapData(RemoteMessage m) =>
+      Map<String, dynamic>.from(m.data);
+
+  /// Canal de la notificación según el tipo: caídas y SOS van al crítico.
+  static AndroidNotificationChannel channelFor(Map<String, dynamic> data) {
+    if (criticalAlertTypes.contains(data['alert_type'])) return criticalChannel;
+    return data['type'] == 'alert' ? _alertChannel : _generalChannel;
   }
 
   void _onForegroundMessage(RemoteMessage m) {
@@ -110,7 +123,7 @@ class PushService {
         m.hashCode,
         n.title,
         n.body,
-        _details(m.data['type'] == 'alert' ? _alertChannel : _generalChannel),
+        _details(channelFor(m.data)),
         payload: _encode(m.data),
       );
     }
@@ -148,10 +161,24 @@ class PushService {
           channelDescription: ch.description,
           importance: Importance.max,
           priority: Priority.high,
+          // El canal crítico suena con el volumen de alarma.
+          audioAttributesUsage: ch.id == criticalChannel.id
+              ? AudioAttributesUsage.alarm
+              : AudioAttributesUsage.notification,
         ),
         iOS: const DarwinNotificationDetails(),
       );
 
+  /// Tipos de alerta que usan el canal crítico (igual que el backend).
+  static const criticalAlertTypes = {'fall', 'sos'};
+
+  static const criticalChannel = AndroidNotificationChannel(
+    'critical_alerts',
+    'Alertas críticas',
+    description: 'Caídas y SOS: suenan con prioridad máxima',
+    importance: Importance.max,
+    audioAttributesUsage: AudioAttributesUsage.alarm,
+  );
   static const _medChannel = AndroidNotificationChannel(
       'meds', 'Medicación', description: 'Alarmas de medicamentos');
   static const _alertChannel = AndroidNotificationChannel(

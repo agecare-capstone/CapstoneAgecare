@@ -53,8 +53,8 @@ class ThresholdsScreen extends ConsumerWidget {
                 onRetry: () => ref.invalidate(thresholdsProvider),
               ),
               data: (thresholds) {
-                final canEdit = patient.role == RoleType.family ||
-                    patient.role == RoleType.doctor;
+                final canEdit = patient.role == RoleType.doctor ||
+                    (patient.role == RoleType.family && patient.isOwner);
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                   children: [
@@ -62,8 +62,8 @@ class ThresholdsScreen extends ConsumerWidget {
                       canEdit
                           ? 'Se genera una alerta cuando una lectura de '
                               '${patient.fullName} queda fuera de estos rangos.'
-                          : 'Solo el familiar o el médico pueden cambiar los '
-                              'umbrales de ${patient.fullName}.',
+                          : 'Solo el familiar administrador o el médico pueden '
+                              'cambiar los umbrales de ${patient.fullName}.',
                       style: const TextStyle(
                           color: AppColors.textSecondary, height: 1.4),
                     ),

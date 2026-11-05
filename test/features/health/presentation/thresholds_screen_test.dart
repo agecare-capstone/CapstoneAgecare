@@ -27,8 +27,9 @@ class _RecordingVitalsRepo extends VitalsRepositoryMock {
 }
 
 class _FixedPatient extends SelectedPatientController {
-  _FixedPatient(this.role);
+  _FixedPatient(this.role, {this.isOwner = true});
   final RoleType role;
+  final bool isOwner;
 
   @override
   PatientCard? build() => PatientCard(
@@ -36,17 +37,19 @@ class _FixedPatient extends SelectedPatientController {
         fullName: 'Elena',
         role: role,
         wellbeingStatus: WellbeingStatus.ok,
+        isOwner: isOwner,
       );
 }
 
 void main() {
-  Future<_RecordingVitalsRepo> pumpScreen(
-      WidgetTester tester, RoleType role) async {
+  Future<_RecordingVitalsRepo> pumpScreen(WidgetTester tester, RoleType role,
+      {bool isOwner = true}) async {
     final repo = _RecordingVitalsRepo();
     await tester.pumpWidget(ProviderScope(
       overrides: [
         vitalsRepositoryProvider.overrideWithValue(repo),
-        selectedPatientProvider.overrideWith(() => _FixedPatient(role)),
+        selectedPatientProvider
+            .overrideWith(() => _FixedPatient(role, isOwner: isOwner)),
       ],
       child:
           MaterialApp(theme: AppTheme.light(), home: const ThresholdsScreen()),
@@ -262,7 +265,8 @@ void main() {
       (tester) async {
     await pumpScreen(tester, RoleType.caregiver);
 
-    expect(find.textContaining('Solo el familiar o el médico'), findsOneWidget);
+    expect(find.textContaining('Solo el familiar administrador o el médico'),
+        findsOneWidget);
     expect(find.text('110'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Guardar'), findsNothing);
     expect(find.text('Restablecer a valores recomendados'), findsNothing);
@@ -275,5 +279,25 @@ void main() {
     expect(
         tester.widget<TextField>(field(VitalType.heartRate, 'Máximo')).enabled,
         isFalse);
+  });
+
+  testWidgets('un familiar que no es administrador solo ve (DAC05-197)',
+      (tester) async {
+    await pumpScreen(tester, RoleType.family, isOwner: false);
+
+    expect(find.textContaining('Solo el familiar administrador o el médico'),
+        findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Guardar'), findsNothing);
+    expect(
+        tester.widget<TextField>(field(VitalType.heartRate, 'Máximo')).enabled,
+        isFalse);
+  });
+
+  testWidgets('el médico sí puede editar (DAC05-197)', (tester) async {
+    await pumpScreen(tester, RoleType.doctor, isOwner: false);
+
+    expect(
+        tester.widget<TextField>(field(VitalType.heartRate, 'Máximo')).enabled,
+        isTrue);
   });
 }

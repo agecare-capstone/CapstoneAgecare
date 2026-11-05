@@ -82,12 +82,17 @@ class PatientCard {
     required this.wellbeingStatus,
     this.activeAlertsCount = 0,
     this.topReason,
+    this.isOwner = true,
   });
 
   final String patientId;
   final String fullName;
   final String? photoUrl;
   final RoleType role;
+
+  /// Familiar administrador del paciente (quien lo creó). Solo él y el médico
+  /// cambian los umbrales (DAC05-197). Si el backend no lo informa, se asume.
+  final bool isOwner;
   final WellbeingStatus wellbeingStatus;
   final int activeAlertsCount;
   final String? topReason;
@@ -101,6 +106,7 @@ class PatientCard {
             WellbeingStatus.fromApi((json['wellbeing_status'] ?? 'ok') as String),
         activeAlertsCount: (json['active_alerts_count'] ?? 0) as int,
         topReason: json['top_reason'] as String?,
+        isOwner: (json['is_owner'] ?? true) as bool,
       );
 }
 

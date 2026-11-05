@@ -10,6 +10,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../patients/application/patients_providers.dart';
 import '../application/home_providers.dart';
 import '../domain/models.dart';
+import 'widgets/wellbeing_traffic_light.dart';
 
 /// Inicio del familiar: saludo, semáforo del día, accesos rápidos, estado
 /// del wearable, vitals y adherencia. El selector multi-paciente vive en la
@@ -51,12 +52,15 @@ class FamilyHomeScreen extends ConsumerWidget {
               onRefresh: () async {
                 ref.invalidate(myPatientsProvider);
                 ref.invalidate(todaySummaryProvider);
+                ref.invalidate(wellbeingProvider);
                 ref.invalidate(selectedPatientDetailProvider);
               },
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
                   _Greeting(name: user?.fullName),
+                  const SizedBox(height: 16),
+                  const WellbeingTrafficLight(),
                   const SizedBox(height: 16),
                   const _TodayCard(),
                   const SizedBox(height: 16),

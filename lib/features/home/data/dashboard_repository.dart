@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/models.dart';
 import '../../patients/domain/models.dart';
 import '../domain/models.dart';
+import '../domain/wellbeing.dart';
 
 abstract class DashboardRepository {
   /// Resumen del día del paciente (semáforo, highlights, adherencia, vitals).
@@ -13,6 +14,9 @@ abstract class DashboardRepository {
 
   /// Tablero multi-paciente del usuario actual.
   Future<List<PatientCard>> dashboard();
+
+  /// Semáforo de bienestar de las últimas 24 horas (DAC05-177).
+  Future<Wellbeing> wellbeing(String patientId);
 }
 
 // ---------------------------------------------------------------------------
@@ -27,6 +31,13 @@ class DashboardRepositoryHttp implements DashboardRepository {
     final data =
         await _api.get<Map<String, dynamic>>('/patients/$patientId/summary/today');
     return TodaySummary.fromJson(data);
+  }
+
+  @override
+  Future<Wellbeing> wellbeing(String patientId) async {
+    final data =
+        await _api.get<Map<String, dynamic>>('/patients/$patientId/wellbeing');
+    return Wellbeing.fromJson(data);
   }
 
   @override
@@ -122,6 +133,27 @@ class DashboardRepositoryMock implements DashboardRepository {
           measuredAt: DateTime.now().subtract(const Duration(minutes: 25)),
         ),
       ],
+    );
+  }
+
+  @override
+  Future<Wellbeing> wellbeing(String patientId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // Mismos casos que el resumen del día: Elena en observación y José con
+    // una alerta crítica activa.
+    if (patientId == 'p-jose') {
+      return const Wellbeing(
+        status: TrafficLight.critical,
+        score: 50,
+        summary: 'Requiere atención inmediata. Posible caída de José.',
+        reasons: ['Posible caída de José', 'Wearable sin datos desde hace 3 h'],
+      );
+    }
+    return const Wellbeing(
+      status: TrafficLight.warning,
+      score: 75,
+      summary: 'Hay valores para revisar. Ritmo cardíaco fuera de rango.',
+      reasons: ['Ritmo cardíaco fuera de rango'],
     );
   }
 

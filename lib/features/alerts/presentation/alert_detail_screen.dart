@@ -10,6 +10,8 @@ import '../../../core/widgets/common.dart';
 import '../../auth/domain/models.dart';
 import '../../patients/application/patients_providers.dart';
 import '../../patients/data/patients_repository.dart';
+import '../../patients/domain/models.dart';
+import '../application/alarm_player.dart';
 import '../application/alerts_providers.dart';
 import '../data/alerts_repository.dart';
 import '../domain/models.dart';
@@ -34,6 +36,25 @@ final caregiverPhoneProvider =
   return null;
 });
 
+/// Paciente de la alerta, para mostrar su domicilio en la pantalla de caída.
+/// Si no se puede cargar, la pantalla sigue funcionando sin él.
+final alertPatientProvider =
+    FutureProvider.autoDispose.family<Patient?, String>((ref, patientId) async {
+  try {
+    return await ref.watch(patientsRepositoryProvider).getPatient(patientId);
+  } catch (_) {
+    return null;
+  }
+});
+
+/// Última ubicación conocida de la alerta (lat/lng del reloj o del SOS).
+({double lat, double lng})? alertLocation(Alert alert) {
+  final lat = alert.meta?['lat'];
+  final lng = alert.meta?['lng'];
+  if (lat is num && lng is num) return (lat: lat.toDouble(), lng: lng.toDouble());
+  return null;
+}
+
 /// Carga una alerta puntual buscándola en la lista del usuario.
 final _alertByIdProvider =
     FutureProvider.autoDispose.family<Alert?, String>((ref, alertId) async {
@@ -56,7 +77,44 @@ class AlertDetailScreen extends ConsumerStatefulWidget {
 class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
   bool _busy = false;
 
+  /// La alarma suena una sola vez por apertura de la pantalla (DAC05-84).
+  bool _alarmStarted = false;
+  bool _alarmOn = false;
+  AlarmPlayer? _alarm;
+
+  void _startAlarm() {
+    if (_alarmStarted || !mounted) return;
+    _alarmStarted = true;
+    _alarm = ref.read(alarmPlayerProvider);
+    setState(() => _alarmOn = true);
+    _alarm!.start();
+  }
+
+  Future<void> _silence() async {
+    if (!_alarmOn) return;
+    setState(() => _alarmOn = false);
+    await _alarm?.stop();
+  }
+
+  @override
+  void dispose() {
+    if (_alarmOn) _alarm?.stop();
+    super.dispose();
+  }
+
+  Future<void> _openMap(({double lat, double lng}) at) async {
+    final ok = await launchUrl(
+      Uri.https('www.google.com', '/maps/search/',
+          {'api': '1', 'query': '${at.lat},${at.lng}'}),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && mounted) {
+      showAppSnackBar(context, 'No se pudo abrir el mapa.', error: true);
+    }
+  }
+
   Future<void> _run(Future<void> Function() action, String okMessage) async {
+    _silence();
     setState(() => _busy = true);
     try {
       await action();
@@ -78,6 +136,7 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
 
   /// Abre el marcador del teléfono con [number].
   Future<void> _call(String number) async {
+    _silence();
     final ok = await launchUrl(Uri(scheme: 'tel', path: number));
     if (!ok && mounted) {
       showAppSnackBar(context, 'No se pudo abrir el marcador ($number).',
@@ -163,12 +222,17 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
     // AGE-505: una caída sin resolver se muestra como pantalla roja de emergencia.
     final emergency =
         alert != null && alert.type == AlertType.fall && !alert.isResolved;
+    if (emergency && !_alarmStarted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startAlarm());
+    }
 
     return Scaffold(
       backgroundColor:
           emergency ? AppColors.critical.withValues(alpha: .06) : null,
       appBar: AppBar(
-        title: Text(emergency ? 'Caída detectada' : 'Detalle de alerta'),
+        // El tema fija el color del título: en la caída va blanco sobre rojo.
+        title: Text(emergency ? 'Caída detectada' : 'Detalle de alerta',
+            style: emergency ? const TextStyle(color: Colors.white) : null),
         backgroundColor: emergency ? AppColors.critical : null,
         foregroundColor: emergency ? Colors.white : null,
       ),
@@ -194,10 +258,16 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
               alert.type == AlertType.fall && !viewerIsCaregiver
                   ? ref.watch(caregiverPhoneProvider(alert.patientId)).valueOrNull
                   : null;
+          final location = alertLocation(alert);
           return _AlertDetailBody(
             alert: alert,
             busy: _busy,
             viewerIsCaregiver: viewerIsCaregiver,
+            patientAddress: alert.type == AlertType.fall
+                ? ref.watch(alertPatientProvider(alert.patientId)).valueOrNull?.address
+                : null,
+            onSilence: _alarmOn ? _silence : null,
+            onOpenMap: location == null ? null : () => _openMap(location),
             onCallCaregiver:
                 caregiverPhone == null ? null : () => _call(caregiverPhone),
             onCallEmergency: () => _call(emergencyNumber),
@@ -225,10 +295,22 @@ class _AlertDetailBody extends StatelessWidget {
     required this.onAcknowledge,
     required this.onResolve,
     this.onFalseAlarm,
+    this.patientAddress,
+    this.onSilence,
+    this.onOpenMap,
   });
 
   final Alert alert;
   final bool busy;
+
+  /// Domicilio del adulto mayor (solo en caídas).
+  final String? patientAddress;
+
+  /// Silenciar la alarma; null si no está sonando.
+  final VoidCallback? onSilence;
+
+  /// Abrir la última ubicación en el mapa; null si no hay ubicación.
+  final VoidCallback? onOpenMap;
 
   /// Quien mira la alerta es la cuidadora del paciente.
   final bool viewerIsCaregiver;
@@ -244,20 +326,29 @@ class _AlertDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = alert.severity.color;
     final isFall = alert.type == AlertType.fall;
     final resolved = alert.isResolved;
+    // AGE-505 / DAC05-84: caída sin resolver = fondo rojo de alta visibilidad.
+    final emergency = isFall && !resolved;
+    final color = emergency ? Colors.white : alert.severity.color;
+    final location = alertLocation(alert);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         // Encabezado con severidad
         Container(
+          key: const ValueKey('alert-header'),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: .10),
+            color: emergency
+                ? AppColors.critical
+                : alert.severity.color.withValues(alpha: .10),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: .4)),
+            border: Border.all(
+                color: emergency
+                    ? AppColors.critical
+                    : alert.severity.color.withValues(alpha: .4)),
           ),
           child: Row(
             children: [
@@ -274,15 +365,74 @@ class _AlertDetailBody extends StatelessWidget {
                             color: color)),
                     const SizedBox(height: 2),
                     Text('${alert.severity.label} · ${alertTimeAgo(alert.createdAt)}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 13)),
+                        style: TextStyle(
+                            color: emergency
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                            fontSize: 13)),
                   ],
                 ),
               ),
             ],
           ),
         ),
+        if (onSilence != null) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.critical,
+              side: const BorderSide(color: AppColors.critical),
+              minimumSize: const Size.fromHeight(48),
+            ),
+            onPressed: onSilence,
+            icon: const Icon(Icons.volume_off_rounded),
+            label: const Text('Silenciar alarma'),
+          ),
+        ],
         const SizedBox(height: 16),
+
+        // Datos del adulto mayor para ir a ayudarlo (DAC05-84).
+        if (emergency) ...[
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Adulto mayor',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                _InfoLine(
+                  icon: Icons.person_rounded,
+                  text: alert.patientName.isEmpty
+                      ? 'Paciente'
+                      : alert.patientName,
+                ),
+                _InfoLine(
+                  icon: Icons.home_rounded,
+                  text: patientAddress ?? 'Domicilio no registrado',
+                  muted: patientAddress == null,
+                ),
+                _InfoLine(
+                  icon: Icons.location_on_rounded,
+                  text: location == null
+                      ? 'Sin ubicación registrada'
+                      : 'Última ubicación: ${location.lat.toStringAsFixed(5)}, '
+                          '${location.lng.toStringAsFixed(5)}',
+                  muted: location == null,
+                ),
+                if (onOpenMap != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: onOpenMap,
+                      icon: const Icon(Icons.map_rounded),
+                      label: const Text('Ver en el mapa'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // Flujo crítico para caídas
         if (isFall && !resolved) ...[
@@ -438,9 +588,21 @@ class _AlertDetailBody extends StatelessWidget {
 
   List<Widget>? _metaRows(Map<String, dynamic>? meta) {
     if (meta == null || meta.isEmpty) return null;
+    const hidden = {
+      'lat', 'lng', 'telemetry', 'source', 'event_type', 'triggered_by',
+      'measured_at',
+    };
     return meta.entries
-        .map((e) => _DetailRow(_prettyKey(e.key), '${e.value}'))
+        .where((e) => !hidden.contains(e.key) && e.value != null)
+        .map((e) => _DetailRow(_prettyKey(e.key), _prettyValue(e.key, e.value)))
         .toList();
+  }
+
+  String _prettyValue(String key, Object? value) {
+    if (key == 'confidence_level' && value is num) {
+      return '${(value * 100).round()}%';
+    }
+    return '$value';
   }
 
   String _prettyKey(String key) {
@@ -453,11 +615,42 @@ class _AlertDetailBody extends StatelessWidget {
       'medication': 'Medicamento',
       'scheduled': 'Programado',
       'last_sync_hours': 'Última sync (h)',
-      'lat': 'Latitud',
-      'lng': 'Longitud',
+      'confidence_level': 'Confianza',
+      'vital_type': 'Signo vital',
+      'min_value': 'Mínimo',
+      'max_value': 'Máximo',
+      'note': 'Nota',
     };
     return map[key] ?? key;
   }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.icon, required this.text, this.muted = false});
+
+  final IconData icon;
+  final String text;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: AppColors.critical),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(text,
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: muted
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary)),
+            ),
+          ],
+        ),
+      );
 }
 
 class _SectionTitle extends StatelessWidget {

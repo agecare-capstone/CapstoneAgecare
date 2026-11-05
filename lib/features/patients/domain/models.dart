@@ -35,6 +35,7 @@ class Patient {
     this.photoUrl,
     this.conditions = const [],
     this.notes,
+    this.address,
     this.wearable,
   });
 
@@ -45,6 +46,9 @@ class Patient {
   final String? photoUrl;
   final List<String> conditions;
   final String? notes;
+
+  /// Domicilio; se muestra en la pantalla de emergencia por caída (DAC05-84).
+  final String? address;
   final WearableStatus? wearable;
 
   int get age {
@@ -66,6 +70,7 @@ class Patient {
         conditions:
             ((json['conditions'] ?? []) as List).map((e) => e.toString()).toList(),
         notes: json['notes'] as String?,
+        address: json['address'] as String?,
         wearable: json['wearable'] != null
             ? WearableStatus.fromJson(json['wearable'] as Map<String, dynamic>)
             : null,
@@ -118,6 +123,7 @@ class NewPatient {
     this.sex,
     this.conditions = const [],
     this.notes,
+    this.address,
   });
 
   final String fullName;
@@ -125,6 +131,7 @@ class NewPatient {
   final String? sex;
   final List<String> conditions;
   final String? notes;
+  final String? address;
 
   Map<String, dynamic> toJson() => {
         'full_name': fullName,
@@ -133,6 +140,7 @@ class NewPatient {
         if (sex != null) 'sex': sex,
         if (conditions.isNotEmpty) 'conditions': conditions,
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
+        if (address != null && address!.isNotEmpty) 'address': address,
       };
 }
 

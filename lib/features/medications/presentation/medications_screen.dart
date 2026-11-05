@@ -201,7 +201,7 @@ class _AdherenceChart extends StatelessWidget {
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: const AxisTitles(
             sideTitles: SideTitles(
-                showTitles: true, reservedSize: 32, interval: 25),
+                showTitles: true, reservedSize: 40, interval: 25),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(

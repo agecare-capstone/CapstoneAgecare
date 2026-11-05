@@ -89,7 +89,7 @@ class DocumentsRepositoryMock implements DocumentsRepository {
       ),
       PatientDocument(
         id: 'doc-3',
-        title: 'Credencial INE',
+        title: 'Cédula de identidad',
         category: 'identificacion',
         fileUrl: 'https://example.com/docs/credencial.jpg',
         createdAt: now.subtract(const Duration(days: 60)),

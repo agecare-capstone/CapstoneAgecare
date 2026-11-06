@@ -37,7 +37,7 @@ class ElderHomeScreen extends ConsumerWidget {
       _ElderTile(
         icon: Icons.photo_library_rounded,
         label: 'Mis fotos',
-        color: AppColors.secondary,
+        color: const Color(0xFF3D7A45), // secondary oscurecido → ~4.7:1 WCAG AA
         speak: 'Mis fotos',
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ElderPhotosScreen()),
@@ -46,7 +46,7 @@ class ElderHomeScreen extends ConsumerWidget {
       _ElderTile(
         icon: Icons.favorite_rounded,
         label: 'Para ti',
-        color: AppColors.statusWarning,
+        color: const Color(0xFF8A5C10), // statusWarning oscurecido → ~5.3:1 WCAG AA
         speak: 'Para ti. Noticias, chistes y ejercicios.',
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ElderContentScreen()),

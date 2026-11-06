@@ -1,12 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../application/caregiver_providers.dart';
 import '../data/caregiver_repository.dart';
 import '../domain/models.dart';
+
+/// Muestra la última nota de relevo si existe, destacada al hacer check-in.
+class _HandoverNoteHighlight extends ConsumerWidget {
+  const _HandoverNoteHighlight({required this.patientId});
+
+  final String patientId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notesAsync = ref.watch(handoverNotesProvider);
+    return notesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (notes) {
+        if (notes.isEmpty) return const SizedBox.shrink();
+        final latest = notes.first;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.statusWarning.withValues(alpha: .10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.statusWarning.withValues(alpha: .40),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.swap_horiz_rounded,
+                      size: 18, color: AppColors.statusWarning),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Nota del turno anterior',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: AppColors.statusWarning,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    DateFormat('d MMM · HH:mm', 'es').format(latest.createdAt),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(latest.text,
+                  style: const TextStyle(fontSize: 14, height: 1.4)),
+              const SizedBox(height: 4),
+              Text('— ${latest.authorName}',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 /// Confirmación de check-in / check-out del turno.
 class CheckinScreen extends ConsumerStatefulWidget {
@@ -80,6 +144,11 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                     ],
                   ),
                 ),
+                // Nota de relevo destacada al hacer check-in (AGE-607).
+                if (entering) ...[
+                  const SizedBox(height: 16),
+                  _HandoverNoteHighlight(patientId: widget.patientId),
+                ],
                 const Spacer(),
                 Text(
                   entering

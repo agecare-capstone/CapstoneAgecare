@@ -70,7 +70,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Marca como leídos los mensajes al abrir el chat.
     unawaited(ref.read(chatRepositoryProvider).markRead(patient));
     // AGE-808: el adulto mayor escucha el último mensaje entrante al abrir el chat.
-    _speakLatestForElder();
+    unawaited(_speakLatestForElder());
   }
 
   Future<void> _load() async {
@@ -132,15 +132,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// AGE-808: si el usuario es adulto mayor, lee en voz alta el último
   /// mensaje de texto entrante al abrir el chat.
-  void _speakLatestForElder() {
+  Future<void> _speakLatestForElder() async {
     final user = ref.read(currentUserProvider);
     if (user?.primaryRole != RoleType.elder) return;
     final incoming = _messages
-        .where((m) => !_isOwn(m) && m.type == MessageType.text && (m.text?.isNotEmpty ?? false))
+        .where((m) =>
+            !_isOwn(m) &&
+            m.type == MessageType.text &&
+            (m.text?.isNotEmpty ?? false))
         .toList();
     if (incoming.isEmpty) return;
     final text = incoming.last.text!;
-    ref.read(speechServiceProvider).speak(text);
+    try {
+      await ref.read(speechServiceProvider).speak(text);
+    } catch (_) {
+      // TTS no disponible: el adulto mayor puede igual leer el mensaje en pantalla.
+    }
   }
 
   // --- Envío de texto ---

@@ -4,16 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import 'package:agecare_app/features/alerts/presentation/sos_button.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/common.dart';
-import '../../auth/application/auth_controller.dart';
-import '../../patients/application/patients_providers.dart';
-import '../application/home_providers.dart';
-import '../domain/models.dart';
-import 'widgets/wellbeing_traffic_light.dart';
+import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/widgets/common.dart';
+import '../../../../auth/application/auth_controller.dart';
+import '../../../../patients/application/patients_providers.dart';
+import '../../../application/home_providers.dart';
+import '../../../domain/models.dart';
+import '../../widgets/patients/patient_cards.dart';
+import '../../widgets/wellbeing/wellbeing_traffic_light.dart';
 
 /// Inicio del familiar: saludo, semáforo del día, accesos rápidos, estado
-/// del wearable, vitals y adherencia. El selector multi-paciente vive en la
+/// del wearable, vitals y adherencia. Con 2 o más pacientes muestra además
+/// una tarjeta por paciente ([PatientCards]); el selector también está en la
 /// barra superior de [MainShell] (AGE-206).
 class FamilyHomeScreen extends ConsumerWidget {
   const FamilyHomeScreen({super.key});
@@ -60,6 +62,11 @@ class FamilyHomeScreen extends ConsumerWidget {
                 children: [
                   _Greeting(name: user?.fullName),
                   const SizedBox(height: 16),
+                  // Con 2+ pacientes: una tarjeta por paciente (DAC05-64).
+                  if (patients.length >= 2) ...[
+                    PatientCards(patients: patients),
+                    const SizedBox(height: 16),
+                  ],
                   const WellbeingTrafficLight(),
                   const SizedBox(height: 16),
                   const _TodayCard(),
@@ -153,11 +160,20 @@ class _TodayCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Text('Resumen de hoy',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700)),
-                  const Spacer(),
-                  WellbeingChip(status: summary.wellbeingStatus, large: true),
+                  const Expanded(
+                    child: Text('Resumen de hoy',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
+                  ),
+                  // En pantallas angostas el chip se achica en vez de desbordar.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: WellbeingChip(
+                          status: summary.wellbeingStatus, large: true),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -450,10 +466,12 @@ class _VitalsAndAdherenceCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Text('Últimos vitales',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700)),
-                  const Spacer(),
+                  const Expanded(
+                    child: Text('Últimos vitales',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
+                  ),
                   TextButton(
                     onPressed: () => context.push('/health'),
                     child: const Text('Ver salud'),

@@ -12,7 +12,7 @@ import '../comms/presentation/comms_screen.dart';
 import '../elder/presentation/elder_home_screen.dart';
 import '../health/presentation/health_screen.dart';
 import '../home/application/home_providers.dart';
-import '../home/presentation/family_home_screen.dart';
+import '../home/presentation/screens/home/family_home_screen.dart';
 import '../medications/presentation/medications_screen.dart';
 import '../patients/application/patients_providers.dart';
 import 'more_screen.dart';

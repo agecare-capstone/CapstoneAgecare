@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../alerts/application/alerts_providers.dart';
 import '../patients/application/patients_providers.dart';
 import '../patients/domain/models.dart';
 
@@ -30,11 +32,13 @@ class PatientSelectorBar extends ConsumerWidget {
       child: Container(
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 10),
-        alignment: Alignment.centerLeft,
         decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: AppColors.divider)),
         ),
-        child: patientsAsync.when(
+        child: Row(
+          children: [
+            Expanded(
+              child: patientsAsync.when(
           loading: () => const _BarLabel('Cargando…'),
           error: (_, __) => const _BarLabel('AgeCare'),
           data: (patients) {
@@ -81,7 +85,11 @@ class PatientSelectorBar extends ConsumerWidget {
           },
         ),
       ),
-    );
+      const _AlertsBellButton(),
+    ],
+  ),
+  ),
+);
   }
 
   Future<void> _openSelector(
@@ -127,6 +135,24 @@ class PatientSelectorBar extends ConsumerWidget {
     if (chosen != null && chosen.patientId != current.patientId) {
       ref.read(selectedPatientProvider.notifier).select(chosen);
     }
+  }
+}
+
+class _AlertsBellButton extends ConsumerWidget {
+  const _AlertsBellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(alertsCountProvider);
+    return IconButton(
+      onPressed: () => context.push('/alerts'),
+      tooltip: 'Centro de alertas',
+      icon: Badge.count(
+        count: count,
+        isLabelVisible: count > 0,
+        child: const Icon(Icons.notifications_outlined),
+      ),
+    );
   }
 }
 

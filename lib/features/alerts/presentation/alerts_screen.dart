@@ -9,7 +9,7 @@ import '../application/alerts_providers.dart';
 import '../data/alerts_repository.dart';
 import '../domain/models.dart';
 
-/// Centro de alertas: lista agrupada por severidad con acciones rápidas.
+/// Centro de alertas: pestañas Activas e Historial.
 class AlertsScreen extends ConsumerWidget {
   const AlertsScreen({super.key});
 
@@ -17,60 +17,111 @@ class AlertsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final alertsAsync = ref.watch(activeAlertsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Centro de alertas')),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(activeAlertsProvider),
-        child: alertsAsync.when(
-          loading: () => const LoadingView(),
-          error: (e, _) => ErrorView(
-            message: e is ApiException ? e.message : 'No pudimos cargar las alertas.',
-            onRetry: () => ref.invalidate(activeAlertsProvider),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Centro de alertas'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Activas'),
+              Tab(text: 'Historial'),
+            ],
           ),
-          data: (alerts) {
-            final active = alerts.where((a) => a.isActive).toList();
-            if (active.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 80),
-                  EmptyView(
-                    icon: Icons.verified_rounded,
-                    title: 'Todo en orden',
-                    subtitle:
-                        'No hay alertas activas. Te avisaremos si algo necesita tu atención.',
-                  ),
+        ),
+        body: RefreshIndicator(
+          onRefresh: () async => ref.invalidate(activeAlertsProvider),
+          child: alertsAsync.when(
+            loading: () => const LoadingView(),
+            error: (e, _) => ErrorView(
+              message: e is ApiException ? e.message : 'No pudimos cargar las alertas.',
+              onRetry: () => ref.invalidate(activeAlertsProvider),
+            ),
+            data: (alerts) {
+              final active = alerts.where((a) => a.isActive).toList();
+              final history = alerts.where((a) => a.isResolved).toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              return TabBarView(
+                children: [
+                  _ActiveTab(active: active),
+                  _HistoryTab(history: history),
                 ],
               );
-            }
-
-            final groups = <AlertSeverity, List<Alert>>{};
-            for (final a in active) {
-              groups.putIfAbsent(a.severity, () => []).add(a);
-            }
-            const order = [
-              AlertSeverity.critical,
-              AlertSeverity.warning,
-              AlertSeverity.info,
-            ];
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              children: [
-                for (final sev in order)
-                  if (groups[sev]?.isNotEmpty ?? false) ...[
-                    _SeverityHeader(severity: sev, count: groups[sev]!.length),
-                    const SizedBox(height: 8),
-                    ...groups[sev]!.map((a) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _AlertCard(alert: a),
-                        )),
-                    const SizedBox(height: 8),
-                  ],
-              ],
-            );
-          },
+            },
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _ActiveTab extends StatelessWidget {
+  const _ActiveTab({required this.active});
+  final List<Alert> active;
+
+  @override
+  Widget build(BuildContext context) {
+    if (active.isEmpty) {
+      return ListView(
+        children: const [
+          SizedBox(height: 80),
+          EmptyView(
+            icon: Icons.verified_rounded,
+            title: 'Todo en orden',
+            subtitle: 'No hay alertas activas. Te avisaremos si algo necesita tu atención.',
+          ),
+        ],
+      );
+    }
+
+    final groups = <AlertSeverity, List<Alert>>{};
+    for (final a in active) {
+      groups.putIfAbsent(a.severity, () => []).add(a);
+    }
+    const order = [AlertSeverity.critical, AlertSeverity.warning, AlertSeverity.info];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        for (final sev in order)
+          if (groups[sev]?.isNotEmpty ?? false) ...[
+            _SeverityHeader(severity: sev, count: groups[sev]!.length),
+            const SizedBox(height: 8),
+            ...groups[sev]!.map((a) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _AlertCard(alert: a),
+                )),
+            const SizedBox(height: 8),
+          ],
+      ],
+    );
+  }
+}
+
+class _HistoryTab extends StatelessWidget {
+  const _HistoryTab({required this.history});
+  final List<Alert> history;
+
+  @override
+  Widget build(BuildContext context) {
+    if (history.isEmpty) {
+      return ListView(
+        children: const [
+          SizedBox(height: 80),
+          EmptyView(
+            icon: Icons.history_rounded,
+            title: 'Sin historial',
+            subtitle: 'Aquí aparecerán las alertas ya resueltas.',
+          ),
+        ],
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      itemCount: history.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => _AlertCard(alert: history[i]),
     );
   }
 }

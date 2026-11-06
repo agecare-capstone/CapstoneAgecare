@@ -8,6 +8,7 @@ import '../../../core/speech/speech_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/models.dart';
 import '../../patients/application/patients_providers.dart';
 import '../application/comms_providers.dart';
 import '../data/assistant_repository.dart';
@@ -68,6 +69,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     await _load();
     // Marca como leídos los mensajes al abrir el chat.
     unawaited(ref.read(chatRepositoryProvider).markRead(patient));
+    // AGE-808: el adulto mayor escucha el último mensaje entrante al abrir el chat.
+    _speakLatestForElder();
   }
 
   Future<void> _load() async {
@@ -125,6 +128,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isOwn(ChatMessage m) {
     final me = ref.read(currentUserProvider)?.userId;
     return m.senderId == me || m.senderId == 'u-me';
+  }
+
+  /// AGE-808: si el usuario es adulto mayor, lee en voz alta el último
+  /// mensaje de texto entrante al abrir el chat.
+  void _speakLatestForElder() {
+    final user = ref.read(currentUserProvider);
+    if (user?.primaryRole != RoleType.elder) return;
+    final incoming = _messages
+        .where((m) => !_isOwn(m) && m.type == MessageType.text && (m.text?.isNotEmpty ?? false))
+        .toList();
+    if (incoming.isEmpty) return;
+    final text = incoming.last.text!;
+    ref.read(speechServiceProvider).speak(text);
   }
 
   // --- Envío de texto ---

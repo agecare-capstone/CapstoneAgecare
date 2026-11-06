@@ -10,7 +10,7 @@ import 'package:agecare_app/features/auth/domain/models.dart';
 import 'package:agecare_app/features/home/application/home_providers.dart';
 import 'package:agecare_app/features/home/data/dashboard_repository.dart';
 import 'package:agecare_app/features/home/domain/wellbeing.dart';
-import 'package:agecare_app/features/home/presentation/widgets/wellbeing_traffic_light.dart';
+import 'package:agecare_app/features/home/presentation/widgets/wellbeing/wellbeing_traffic_light.dart';
 import 'package:agecare_app/features/patients/application/patients_providers.dart';
 import 'package:agecare_app/features/patients/domain/models.dart';
 import 'package:flutter/material.dart';

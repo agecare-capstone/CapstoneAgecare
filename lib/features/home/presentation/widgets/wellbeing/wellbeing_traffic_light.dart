@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/common.dart';
-import '../../application/home_providers.dart';
-import '../../domain/wellbeing.dart';
+import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/widgets/common.dart';
+import '../../../application/home_providers.dart';
+import '../../../domain/wellbeing.dart';
 
 /// Semáforo de bienestar del paciente seleccionado (AGE-305 / DAC05-177):
 /// verde, amarillo o rojo con el motivo destacado, más los estados de carga,

@@ -6,6 +6,7 @@ import 'package:agecare_app/features/alerts/presentation/sos_button.dart';
 
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/widgets/common.dart';
+import '../../../../../core/widgets/medical_disclaimer.dart';
 import '../../../../auth/application/auth_controller.dart';
 import '../../../../patients/application/patients_providers.dart';
 import '../../../application/home_providers.dart';
@@ -76,6 +77,8 @@ class FamilyHomeScreen extends ConsumerWidget {
                   const _WearableCard(),
                   const SizedBox(height: 16),
                   const _VitalsAndAdherenceCard(),
+                  const SizedBox(height: 16),
+                  const MedicalDisclaimer(),
                 ],
               ),
             );

@@ -101,3 +101,40 @@ class ContentItem {
         imageUrl: json['image_url'] as String?,
       );
 }
+
+/// Tarea de la agenda del adulto mayor: una comida, una cita médica, etc.
+/// Viene de GET /patients/{id}/daily-tasks.
+class AgendaTask {
+  const AgendaTask({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.date,
+    this.time,
+    this.status = 'pending',
+  });
+
+  final String id;
+  final String title;
+
+  /// meal, hygiene, activity, appointment u other.
+  final String category;
+  final DateTime date;
+
+  /// Hora local "HH:MM", si la tiene.
+  final String? time;
+
+  /// pending, completed o skipped.
+  final String status;
+
+  bool get isPending => status == 'pending';
+
+  factory AgendaTask.fromJson(Map<String, dynamic> json) => AgendaTask(
+        id: (json['task_id'] ?? json['id']).toString(),
+        title: (json['title'] ?? '') as String,
+        category: (json['category'] ?? 'other') as String,
+        date: DateTime.parse(json['date'] as String),
+        time: json['scheduled_time'] as String?,
+        status: (json['status'] ?? 'pending') as String,
+      );
+}

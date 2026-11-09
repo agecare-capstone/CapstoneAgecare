@@ -114,18 +114,35 @@ class AuthRepositoryMock implements AuthRepository {
     ],
   );
 
+  /// Adulto mayor de la demo (misma cuenta que el seed del backend).
+  static const demoElderEmail = 'elena@agecare.app';
+
+  static const _demoElder = User(
+    userId: 'u-demo-elena',
+    fullName: 'Elena Ramírez',
+    email: demoElderEmail,
+    memberships: [
+      Membership(patientId: 'p-elena', patientName: 'Elena', role: RoleType.elder),
+    ],
+  );
+
   @override
   Future<AuthSession> login({required String email, required String password}) async {
     await Future.delayed(const Duration(milliseconds: 400));
-    if (email.toLowerCase() != demoEmail || password != demoPassword) {
+    final user = switch (email.toLowerCase()) {
+      demoEmail => _demoUser,
+      demoElderEmail => _demoElder,
+      _ => null,
+    };
+    if (user == null || password != demoPassword) {
       throw ApiException(
         statusCode: 401,
         code: 'INVALID_CREDENTIALS',
         message: 'Correo o contraseña incorrectos.',
       );
     }
-    _currentUser = _demoUser;
-    return const AuthSession(user: _demoUser, accessToken: 'mock-access', refreshToken: 'mock-refresh');
+    _currentUser = user;
+    return AuthSession(user: user, accessToken: 'mock-access', refreshToken: 'mock-refresh');
   }
 
   @override

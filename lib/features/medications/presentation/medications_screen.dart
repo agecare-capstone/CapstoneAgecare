@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/medical_disclaimer.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/models.dart';
 import '../../patients/application/patients_providers.dart';
@@ -64,6 +65,8 @@ class MedicationsScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
+                  const MedicalDisclaimer(),
+                  const SizedBox(height: 16),
                   const _AdherenceSection(),
                   const SizedBox(height: 20),
                   const _TodayDosesSection(),

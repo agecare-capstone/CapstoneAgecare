@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/models.dart';
 import '../../patients/application/patients_providers.dart';
 import '../application/medications_providers.dart';
 import '../data/medications_repository.dart';
@@ -20,29 +22,34 @@ class MedicationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final patient = ref.watch(selectedPatientProvider);
     final meds = ref.watch(medicationsProvider);
+    // AGE-404: familiar y adulto mayor tienen solo lectura en medicamentos.
+    final role = ref.watch(currentUserProvider)?.primaryRole;
+    final canEdit = role == RoleType.caregiver || role == RoleType.doctor;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Medicamentos'),
         actions: [
-          IconButton(
-            tooltip: 'Escanear receta',
-            icon: const Icon(Icons.document_scanner_rounded),
-            onPressed: patient == null
-                ? null
-                : () => context.push('/meds/scan?patient=${patient.patientId}'),
-          ),
+          if (canEdit)
+            IconButton(
+              tooltip: 'Escanear receta',
+              icon: const Icon(Icons.document_scanner_rounded),
+              onPressed: patient == null
+                  ? null
+                  : () =>
+                      context.push('/meds/scan?patient=${patient.patientId}'),
+            ),
         ],
       ),
-      floatingActionButton: patient == null
-          ? null
-          : FloatingActionButton.extended(
+      floatingActionButton: canEdit && patient != null
+          ? FloatingActionButton.extended(
               heroTag: null,
               onPressed: () =>
                   context.push('/meds/plan?patient=${patient.patientId}'),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Agregar'),
-            ),
+            )
+          : null,
       body: patient == null
           ? const EmptyView(
               icon: Icons.person_search_rounded,
@@ -92,6 +99,7 @@ class MedicationsScreen extends ConsumerWidget {
                                   child: _MedicationCard(
                                     medication: m,
                                     patientId: patient.patientId,
+                                    canEdit: canEdit,
                                   ),
                                 ),
                             ],
@@ -405,16 +413,23 @@ class _StatusChip extends StatelessWidget {
 // Tarjeta de medicamento
 // ---------------------------------------------------------------------------
 class _MedicationCard extends ConsumerWidget {
-  const _MedicationCard({required this.medication, required this.patientId});
+  const _MedicationCard({
+    required this.medication,
+    required this.patientId,
+    required this.canEdit,
+  });
 
   final Medication medication;
   final String patientId;
+  final bool canEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
-      onTap: () => context.push(
-          '/meds/plan?patient=$patientId&medication=${medication.id}'),
+      onTap: canEdit
+          ? () => context.push(
+              '/meds/plan?patient=$patientId&medication=${medication.id}')
+          : null,
       child: Row(
         children: [
           const Icon(Icons.medication_liquid_rounded,

@@ -4,6 +4,7 @@
 // cambia el paciente del semáforo. Con 1 paciente no hay tarjetas: Inicio es de
 // ese paciente. Deslizar hacia abajo recarga el semáforo.
 import 'package:agecare_app/core/theme/app_theme.dart';
+import 'package:agecare_app/core/widgets/medical_disclaimer.dart';
 import 'package:agecare_app/features/home/data/dashboard_repository.dart';
 import 'package:agecare_app/features/home/domain/wellbeing.dart';
 import 'package:agecare_app/features/home/presentation/screens/home/family_home_screen.dart';
@@ -113,5 +114,15 @@ void main() {
 
     expect(dashboard.calls.length, greaterThan(before));
     expect(find.text('Semáforo de Elena'), findsOneWidget);
+  });
+
+  testWidgets('Inicio termina con el aviso legal de medicamentos',
+      (tester) async {
+    await pump(tester, PatientsRepositoryMock());
+    await tester.scrollUntilVisible(find.byType(MedicalDisclaimer), 300,
+        scrollable: find.byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.down));
+    expect(find.textContaining('no reemplaza la indicación de un médico'),
+        findsOneWidget);
   });
 }

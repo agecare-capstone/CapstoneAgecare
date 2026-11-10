@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/notifications/push_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/medical_disclaimer.dart';
 import '../application/medications_providers.dart';
 import '../data/medications_repository.dart';
 import '../domain/models.dart';
@@ -207,6 +208,8 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                 children: [
+                  const MedicalDisclaimer(),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _name,
                     textCapitalization: TextCapitalization.sentences,

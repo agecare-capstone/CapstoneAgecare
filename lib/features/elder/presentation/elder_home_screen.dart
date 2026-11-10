@@ -4,17 +4,22 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/speech/speech_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/medical_disclaimer.dart';
 import '../../alerts/presentation/sos_button.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../medications/domain/models.dart';
 import '../application/elder_providers.dart';
+import '../domain/models.dart';
 import 'elder_content_screen.dart';
+import 'elder_medicines_screen.dart';
 import 'elder_photos_screen.dart';
 
 /// Pantalla PRINCIPAL de la vista del adulto mayor (shell del rol elder).
 ///
-/// Diseño accesible: saludo grande, fecha en palabras y un mosaico de botones
-/// enormes con icono + etiqueta. Cada acción se lee en voz alta al tocarla y
-/// hay un botón de emergencia (SOS) muy visible.
+/// Diseño accesible: saludo grande, fecha en palabras, "Tu día" (próximo
+/// remedio, comidas pendientes y próxima cita) y botones con letra grande.
+/// Cada acción se lee en voz alta al tocarla y hay un botón de emergencia
+/// (SOS) muy visible. El adulto mayor ve sus remedios pero no los modifica.
 class ElderHomeScreen extends ConsumerWidget {
   const ElderHomeScreen({super.key});
 
@@ -54,25 +59,27 @@ class ElderHomeScreen extends ConsumerWidget {
       ),
       _ElderTile(
         icon: Icons.medication_rounded,
-        label: 'Mis\nmedicinas',
-        color: AppColors.statusOk,
-        speak: 'Mis medicinas',
-        onTap: () {
-          if (patientId == null) {
-            speech.speak('Aún no hay medicinas configuradas.');
-            return;
-          }
-          context.push('/meds/plan?patient=$patientId');
-        },
+        label: 'Mis\nremedios',
+        color: const Color(0xFF1F7A44), // statusOk oscurecido → contraste AA
+        speak: 'Mis remedios de hoy y de la semana',
+        // Solo lectura: el adulto mayor no agrega ni cambia remedios.
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ElderMedicinesScreen()),
+        ),
       ),
     ];
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(elderDosesProvider(1));
+            ref.invalidate(elderMealsProvider);
+            ref.invalidate(elderAppointmentsProvider);
+          },
+          child: ListView(
+            // Espacio abajo para que el botón SOS no tape el contenido.
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
             children: [
               Row(
                 children: [
@@ -83,7 +90,7 @@ class ElderHomeScreen extends ConsumerWidget {
                         Text(
                           'Hola, $firstName',
                           style: const TextStyle(
-                            fontSize: 34,
+                            fontSize: 38,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
@@ -92,7 +99,7 @@ class ElderHomeScreen extends ConsumerWidget {
                         Text(
                           _spanishDate(DateTime.now()),
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 24,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -106,27 +113,35 @@ class ElderHomeScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   _HelpButton(
                     onTap: () => speech.speak(
-                      'Esta es tu pantalla de inicio. Toca un botón grande para '
-                      'llamar a tu familia, ver tus fotos, escuchar contenido '
-                      'para ti o revisar tus medicinas. El botón rojo de abajo '
-                      'es para pedir ayuda en una emergencia.',
+                      'Esta es tu pantalla de inicio. Arriba ves tu día: tu '
+                      'próximo remedio, tus comidas y tu próxima cita. Abajo '
+                      'hay botones para llamar a tu familia, ver tus fotos, '
+                      'escuchar contenido para ti o revisar tus remedios. El '
+                      'botón rojo es para pedir ayuda en una emergencia.',
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1,
-                  children: [
-                    for (final tile in tiles)
-                      _ElderTileButton(tile: tile, speech: speech),
-                  ],
-                ),
+              if (patientId != null) ...[
+                _TodayAgenda(speech: speech),
+                const SizedBox(height: 20),
+              ],
+              // Botones más bajos y con letra más grande.
+              GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.45,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  for (final tile in tiles)
+                    _ElderTileButton(tile: tile, speech: speech),
+                ],
               ),
+              const SizedBox(height: 20),
+              const MedicalDisclaimer(forElder: true),
             ],
           ),
         ),
@@ -194,20 +209,27 @@ class _ElderTileButton extends StatelessWidget {
             tile.onTap();
           },
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(10),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(tile.icon, size: 64, color: Colors.white),
-                const SizedBox(height: 14),
-                Text(
-                  tile.label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.1,
+                Icon(tile.icon, size: 34, color: Colors.white),
+                const SizedBox(height: 4),
+                // Si la pantalla es angosta, el texto se achica en vez de cortarse.
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      tile.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.1,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -289,6 +311,157 @@ class _HelpButton extends StatelessWidget {
             padding: EdgeInsets.all(14),
             child: Icon(Icons.volume_up_rounded,
                 size: 36, color: AppColors.primaryDark),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Tu día": próximo remedio, comidas pendientes y próxima cita médica.
+class _TodayAgenda extends ConsumerWidget {
+  const _TodayAgenda({required this.speech});
+
+  final SpeechService speech;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final doses = ref.watch(elderDosesProvider(1));
+    final meals = ref.watch(elderMealsProvider);
+    final appointments = ref.watch(elderAppointmentsProvider);
+    final now = DateTime.now();
+
+    final pending = (doses.valueOrNull ?? const <Dose>[])
+        .where((d) => d.status == DoseStatus.pending || d.status == DoseStatus.skipped)
+        .toList()
+      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    final next = pending.where((d) => !d.scheduledAt.isBefore(now)).firstOrNull ??
+        pending.firstOrNull;
+    final medText = doses.isLoading
+        ? 'Cargando…'
+        : next == null
+            ? 'Ya no te quedan remedios por hoy'
+            : '${next.timeLabel} · ${next.medicationName} ${doseAmount(next)}'.trim();
+
+    final pendingMeals = (meals.valueOrNull ?? const <AgendaTask>[])
+        .where((t) => t.isPending)
+        .toList();
+    final mealText = meals.isLoading
+        ? 'Cargando…'
+        : pendingMeals.isEmpty
+            ? 'No tienes comidas pendientes'
+            : pendingMeals
+                .map((t) => t.time == null ? t.title : '${t.time} · ${t.title}')
+                .join('\n');
+
+    final visit = (appointments.valueOrNull ?? const <AgendaTask>[]).firstOrNull;
+    final visitText = appointments.isLoading
+        ? 'Cargando…'
+        : visit == null
+            ? 'No tienes citas esta semana'
+            : '${elderDayLabel(visit.date)}${visit.time == null ? '' : ', ${visit.time}'}\n${visit.title}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('Tu día',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        const SizedBox(height: 10),
+        _AgendaCard(
+          key: const Key('agenda-medicine'),
+          icon: Icons.medication_rounded,
+          color: const Color(0xFF1F7A44),
+          title: 'Próximo remedio',
+          text: medText,
+          speech: speech,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ElderMedicinesScreen()),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _AgendaCard(
+          key: const Key('agenda-meals'),
+          icon: Icons.restaurant_rounded,
+          color: const Color(0xFF8A5C10),
+          title: 'Comidas pendientes',
+          text: mealText,
+          speech: speech,
+        ),
+        const SizedBox(height: 10),
+        _AgendaCard(
+          key: const Key('agenda-appointment'),
+          icon: Icons.event_rounded,
+          color: AppColors.primaryDark,
+          title: 'Próxima cita médica',
+          text: visitText,
+          speech: speech,
+        ),
+      ],
+    );
+  }
+}
+
+class _AgendaCard extends StatelessWidget {
+  const _AgendaCard({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.text,
+    required this.speech,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String text;
+  final SpeechService speech;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final spoken = '$title. ${text.replaceAll('\n', '. ').replaceAll(' · ', ', ')}';
+    return Semantics(
+      button: true,
+      label: spoken,
+      excludeSemantics: true,
+      child: Material(
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: color.withValues(alpha: .35), width: 1.5),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            speech.speak(spoken);
+            onTap?.call();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 34, color: color),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: color)),
+                      const SizedBox(height: 2),
+                      Text(text,
+                          style: const TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.25)),
+                    ],
+                  ),
+                ),
+                if (onTap != null)
+                  const Icon(Icons.chevron_right_rounded, size: 34, color: AppColors.textSecondary),
+              ],
+            ),
           ),
         ),
       ),

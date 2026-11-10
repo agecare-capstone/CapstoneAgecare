@@ -13,6 +13,10 @@ abstract class ElderRepository {
   Future<void> reactPhoto(String photoId, String reaction);
   Future<void> deletePhoto(String photoId);
   Future<List<ContentItem>> contentFeed({String? category});
+
+  /// Tareas de la agenda desde hoy durante [days] días (comidas, citas...).
+  Future<List<AgendaTask>> agenda(String patientId,
+      {int days = 1, String? category});
 }
 
 // ---------------------------------------------------------------------------
@@ -61,6 +65,18 @@ class ElderRepositoryHttp implements ElderRepository {
     );
     return ((data['items'] ?? []) as List)
         .map((e) => ContentItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<AgendaTask>> agenda(String patientId,
+      {int days = 1, String? category}) async {
+    final data = await _api.get<Map<String, dynamic>>(
+      '/patients/$patientId/daily-tasks',
+      query: {'days': days, if (category != null) 'category': category},
+    );
+    return ((data['items'] ?? []) as List)
+        .map((e) => AgendaTask.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 }
@@ -179,6 +195,26 @@ class ElderRepositoryMock implements ElderRepository {
     ];
     if (category == null || category.isEmpty) return all;
     return all.where((c) => c.type.apiValue == category).toList();
+  }
+
+  @override
+  Future<List<AgendaTask>> agenda(String patientId,
+      {int days = 1, String? category}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day);
+    final all = [
+      AgendaTask(id: 't-desayuno', title: 'Desayuno', category: 'meal', date: day, time: '08:30', status: 'completed'),
+      AgendaTask(id: 't-almuerzo', title: 'Almuerzo', category: 'meal', date: day, time: '13:00'),
+      AgendaTask(id: 't-once', title: 'Once', category: 'meal', date: day, time: '18:00'),
+      AgendaTask(id: 't-cardio', title: 'Control con cardiólogo', category: 'appointment', date: day.add(const Duration(days: 2)), time: '10:30'),
+      AgendaTask(id: 't-kine', title: 'Kinesiología', category: 'appointment', date: day.add(const Duration(days: 5)), time: '16:00'),
+    ];
+    final last = day.add(Duration(days: days - 1));
+    return all
+        .where((t) => !t.date.isAfter(last))
+        .where((t) => category == null || t.category == category)
+        .toList();
   }
 }
 

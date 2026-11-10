@@ -10,7 +10,8 @@ abstract class MedicationsRepository {
   Future<Medication> updateMedication(
       String patientId, String medicationId, NewMedication data);
   Future<void> deleteMedication(String patientId, String medicationId);
-  Future<List<Dose>> listDoses(String patientId, {DateTime? date});
+  /// Tomas desde [date] (por defecto hoy) durante [days] días (1 a 14).
+  Future<List<Dose>> listDoses(String patientId, {DateTime? date, int days = 1});
   Future<Dose> logDose(String doseId, DoseStatus status, {String? note});
   Future<Adherence> adherence(String patientId,
       {DateTime? from, DateTime? to});
@@ -58,11 +59,13 @@ class MedicationsRepositoryHttp implements MedicationsRepository {
       _api.delete<void>('/patients/$patientId/medications/$medicationId');
 
   @override
-  Future<List<Dose>> listDoses(String patientId, {DateTime? date}) async {
+  Future<List<Dose>> listDoses(String patientId,
+      {DateTime? date, int days = 1}) async {
     final data = await _api.get<Map<String, dynamic>>(
       '/patients/$patientId/doses',
       query: {
         if (date != null) 'date': _dateOnly(date),
+        if (days > 1) 'days': days,
       },
     );
     return ((data['items'] ?? []) as List)
@@ -257,8 +260,10 @@ class MedicationsRepositoryMock implements MedicationsRepository {
   }
 
   @override
-  Future<List<Dose>> listDoses(String patientId, {DateTime? date}) async {
+  Future<List<Dose>> listDoses(String patientId,
+      {DateTime? date, int days = 1}) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    if (days > 1) return _week(date ?? DateTime.now(), days);
     if (date == null) return List.of(_doses);
     return _doses
         .where((d) =>
@@ -266,6 +271,34 @@ class MedicationsRepositoryMock implements MedicationsRepository {
             d.scheduledAt.month == date.month &&
             d.scheduledAt.day == date.day)
         .toList();
+  }
+
+  /// Semana simulada: las tomas de hoy reales y las de los días siguientes
+  /// generadas desde el horario de cada medicamento.
+  List<Dose> _week(DateTime from, int days) {
+    final first = DateTime(from.year, from.month, from.day);
+    final result = <Dose>[
+      ..._doses.where((d) => !d.scheduledAt.isBefore(first) &&
+          d.scheduledAt.isBefore(first.add(const Duration(days: 1)))),
+    ];
+    for (var i = 1; i < days; i++) {
+      final day = first.add(Duration(days: i));
+      for (final m in _meds) {
+        for (final hhmm in m.schedule) {
+          final parts = hhmm.split(':');
+          result.add(Dose(
+            id: 'd-${m.id}-$i-$hhmm',
+            medicationId: m.id,
+            medicationName: m.name,
+            scheduledAt: _at(day, int.parse(parts[0]), int.parse(parts[1])),
+            dose: m.dose,
+            unit: m.unit,
+          ));
+        }
+      }
+    }
+    result.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    return result;
   }
 
   @override

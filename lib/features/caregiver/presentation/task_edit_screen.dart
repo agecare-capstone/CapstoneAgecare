@@ -29,6 +29,7 @@ class _TaskEditScreenState extends ConsumerState<TaskEditScreen> {
     'Medicación',
     'Alimentación',
     'Actividad física',
+    'Cita médica',
     'Compañía',
     'Otros',
   ];

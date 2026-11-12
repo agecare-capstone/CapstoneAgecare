@@ -207,7 +207,11 @@ class _PhotoCard extends StatelessWidget {
                       fontSize: 18, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),
-                Row(
+                // Wrap: con letra grande (DAC05-94) los botones bajan de
+                // línea en vez de salirse de la pantalla.
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
                     _ReactionButton(
                       icon: Icons.favorite_rounded,
@@ -215,14 +219,12 @@ class _PhotoCard extends StatelessWidget {
                       count: photo.reactionCount('love'),
                       onTap: () => onReact('love'),
                     ),
-                    const SizedBox(width: 12),
                     _ReactionButton(
                       icon: Icons.sentiment_very_satisfied_rounded,
                       color: AppColors.statusWarning,
                       count: photo.reactionCount('smile'),
                       onTap: () => onReact('smile'),
                     ),
-                    const Spacer(),
                     if (caption != null && caption.isNotEmpty)
                       _ReactionButton(
                         icon: Icons.volume_up_rounded,

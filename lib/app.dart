@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/accessibility/accessibility_settings.dart';
 import 'core/config/app_config.dart';
 import 'core/notifications/push_service.dart';
 import 'core/router/app_router.dart';
@@ -83,6 +84,9 @@ class _AgeCareAppState extends ConsumerState<AgeCareApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: router,
+      // Tamaño de letra y alto contraste elegidos por el usuario (DAC05-94).
+      builder: (context, child) =>
+          AccessibilityScope(child: child ?? const SizedBox.shrink()),
       locale: const Locale('es'),
       supportedLocales: const [Locale('es'), Locale('en')],
       localizationsDelegates: const [

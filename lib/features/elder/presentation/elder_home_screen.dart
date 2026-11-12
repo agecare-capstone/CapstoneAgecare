@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/accessibility/accessibility_settings.dart';
 import '../../../core/speech/speech_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/medical_disclaimer.dart';
@@ -12,7 +13,7 @@ import '../application/elder_providers.dart';
 import '../domain/models.dart';
 import 'elder_content_screen.dart';
 import 'elder_medicines_screen.dart';
-import 'elder_photos_screen.dart';
+import 'elder_slideshow_screen.dart';
 
 /// Pantalla PRINCIPAL de la vista del adulto mayor (shell del rol elder).
 ///
@@ -44,8 +45,9 @@ class ElderHomeScreen extends ConsumerWidget {
         label: 'Mis fotos',
         color: const Color(0xFF3D7A45), // secondary oscurecido → ~4.7:1 WCAG AA
         speak: 'Mis fotos',
+        // Abre la presentación: las fotos avanzan solas (DAC05-29).
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ElderPhotosScreen()),
+          MaterialPageRoute(builder: (_) => const ElderSlideshowScreen()),
         ),
       ),
       _ElderTile(
@@ -248,6 +250,18 @@ class _SettingsButton extends StatelessWidget {
 
   final VoidCallback onLogout;
 
+  /// Ajustes del adulto mayor: tamaño de letra, alto contraste y cerrar
+  /// sesión (DAC05-94). Los cambios se ven al instante.
+  Future<void> _openSettings(BuildContext context) async {
+    final logout = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const ElderSettingsSheet(),
+    );
+    if (logout == true && context.mounted) await _confirm(context);
+  }
+
   Future<void> _confirm(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -279,12 +293,13 @@ class _SettingsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Ajustes. Cerrar sesión.',
+      label: 'Ajustes. Tamaño de letra, contraste y cerrar sesión.',
       child: IconButton(
-        onPressed: () => _confirm(context),
-        iconSize: 28,
+        key: const Key('elder-settings'),
+        onPressed: () => _openSettings(context),
+        iconSize: 32,
         color: AppColors.textSecondary,
-        tooltip: 'Cerrar sesión',
+        tooltip: 'Ajustes',
         icon: const Icon(Icons.settings_outlined),
       ),
     );
@@ -460,6 +475,125 @@ class _AgendaCard extends StatelessWidget {
                 ),
                 if (onTap != null)
                   const Icon(Icons.chevron_right_rounded, size: 34, color: AppColors.textSecondary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Hoja de ajustes del adulto mayor (DAC05-94): botones grandes para elegir el
+/// tamaño de letra y un interruptor de alto contraste.
+class ElderSettingsSheet extends ConsumerWidget {
+  const ElderSettingsSheet({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(accessibilityProvider);
+    final controller = ref.read(accessibilityProvider.notifier);
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Ajustes',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 16),
+            const Text('Tamaño de letra',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            for (final option in TextSizeOption.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _SizeChoice(
+                  option: option,
+                  selected: settings.textSize == option,
+                  onTap: () => controller.setTextSize(option),
+                ),
+              ),
+            const SizedBox(height: 8),
+            Material(
+              color: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: AppColors.divider, width: 1.5),
+              ),
+              child: SwitchListTile(
+                key: const Key('high-contrast-switch'),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                title: const Text('Alto contraste',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                subtitle: const Text('Colores más fuertes y letra en negrita',
+                    style: TextStyle(fontSize: 18)),
+                value: settings.highContrast,
+                onChanged: controller.setHighContrast,
+              ),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                minimumSize: const Size.fromHeight(56),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text('Cerrar sesión', style: TextStyle(fontSize: 20)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SizeChoice extends StatelessWidget {
+  const _SizeChoice({required this.option, required this.selected, required this.onTap});
+
+  final TextSizeOption option;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Letra ${option.label}',
+      excludeSemantics: true,
+      child: Material(
+        key: Key('text-size-${option.key}'),
+        color: selected ? AppColors.primary.withValues(alpha: .10) : AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: selected ? AppColors.primary : AppColors.divider,
+            width: selected ? 2.5 : 1.5,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                // Muestra del tamaño: la "A" crece con cada opción.
+                SizedBox(
+                  width: 48,
+                  child: Text('A',
+                      textScaler: TextScaler.noScaling,
+                      style: TextStyle(
+                          fontSize: 22 * option.scale, fontWeight: FontWeight.w800)),
+                ),
+                Expanded(
+                  child: Text(option.label,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+                ),
+                if (selected)
+                  const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 30),
               ],
             ),
           ),

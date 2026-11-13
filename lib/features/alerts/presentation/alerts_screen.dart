@@ -258,9 +258,9 @@ class _AlertCardState extends ConsumerState<_AlertCard> {
                     onPressed: _busy
                         ? null
                         : () => _run(() => repo.acknowledge(a.id),
-                            'Alerta reconocida'),
+                            'Marcada como vista'),
                     icon: const Icon(Icons.done_rounded, size: 18),
-                    label: const Text('Reconocer'),
+                    label: const Text(alertSeenLabel),
                   ),
                 ),
               if (!acknowledged) const SizedBox(width: 10),
@@ -273,7 +273,10 @@ class _AlertCardState extends ConsumerState<_AlertCard> {
                   onPressed: _busy
                       ? null
                       : () => _run(
-                          () => repo.resolve(a.id), 'Alerta resuelta'),
+                          () => repo.resolve(a.id),
+                          a.type == AlertType.medicationMissed
+                              ? 'Dosis marcada como tomada'
+                              : 'Alerta resuelta'),
                   icon: _busy
                       ? const SizedBox(
                           width: 16,
@@ -282,7 +285,7 @@ class _AlertCardState extends ConsumerState<_AlertCard> {
                               strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.task_alt_rounded, size: 18),
-                  label: const Text('Resolver'),
+                  label: Text(a.type.resolveLabel),
                 ),
               ),
             ],

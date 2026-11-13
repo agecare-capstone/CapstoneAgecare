@@ -40,8 +40,8 @@ void main() {
     // antes faltaba en el modelo de datos.
     expect(find.text('Ritmo cardíaco'), findsOneWidget);
     expect(find.text('Oxígeno (SpO2)'), findsOneWidget);
-    expect(find.text('Temperatura'), findsOneWidget);
-    expect(find.text('36.7'), findsOneWidget); // 1 decimal, no redondeado
+    // La temperatura ya no se muestra (feedback del equipo).
+    expect(find.text('Temperatura'), findsNothing);
 
     // Grupo "Actividad": el resto (sueño/pasos) no son vitales núcleo.
     expect(find.text('Sueño'), findsOneWidget);

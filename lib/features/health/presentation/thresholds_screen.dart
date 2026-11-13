@@ -16,7 +16,6 @@ const editableVitals = [
   VitalType.heartRate,
   VitalType.spo2,
   VitalType.bloodPressure,
-  VitalType.temperature,
 ];
 
 /// Umbrales de alerta del paciente seleccionado.

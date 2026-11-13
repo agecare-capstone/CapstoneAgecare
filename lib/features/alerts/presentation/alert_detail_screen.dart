@@ -273,7 +273,7 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
             onCallEmergency: () => _call(emergencyNumber),
             onAcknowledge: () => _run(
                 () => ref.read(alertsRepositoryProvider).acknowledge(alert.id),
-                'Alerta reconocida'),
+                'Marcada como vista'),
             onResolve: () => _resolve(alert),
             onFalseAlarm: alert.severity == AlertSeverity.critical
                 ? () => _confirmFalseAlarm(alert)
@@ -535,7 +535,7 @@ class _AlertDetailBody extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: busy ? null : onAcknowledge,
               icon: const Icon(Icons.done_rounded),
-              label: const Text('Reconocer'),
+              label: const Text(alertSeenLabel),
               style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(52)),
             ),
@@ -549,7 +549,7 @@ class _AlertDetailBody extends StatelessWidget {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.task_alt_rounded),
-            label: const Text('Resolver alerta'),
+            label: Text(alert.type.resolveLabel),
           ),
           if (onFalseAlarm != null) ...[
             const SizedBox(height: 4),

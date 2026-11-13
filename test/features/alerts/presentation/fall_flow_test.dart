@@ -122,8 +122,8 @@ void main() {
   testWidgets('resolver una caída exige escribir una nota', (tester) async {
     final repo = await pumpFall(tester);
 
-    await tester.scrollUntilVisible(find.text('Resolver alerta'), 200);
-    await tester.tap(find.text('Resolver alerta'));
+    await tester.scrollUntilVisible(find.text('Marcar como resuelto'), 200);
+    await tester.tap(find.text('Marcar como resuelto'));
     await tester.pumpAndSettle();
 
     // Sin nota, "Resolver" está deshabilitado.

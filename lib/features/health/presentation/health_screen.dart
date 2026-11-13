@@ -67,11 +67,15 @@ class HealthScreen extends ConsumerWidget {
             else ...[
               _VitalGroup(
                 title: 'Vitales',
-                vitals: vitals.where((v) => v.type.isCoreVital).toList(),
+                vitals: vitals
+                    .where((v) => v.type.isCoreVital && !v.type.isHidden)
+                    .toList(),
               ),
               _VitalGroup(
                 title: 'Actividad',
-                vitals: vitals.where((v) => !v.type.isCoreVital).toList(),
+                vitals: vitals
+                    .where((v) => !v.type.isCoreVital && !v.type.isHidden)
+                    .toList(),
               ),
             ],
           ],

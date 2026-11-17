@@ -41,6 +41,42 @@ void main() {
       expect(obs.text, contains('almorzó'));
     });
 
+    test('createObservation persists severity when provided (DAC05-209)', () async {
+      final obs = await caregiverRepo.createObservation(
+        'p-elena',
+        text: 'Se observó una lesión leve en el antebrazo izquierdo.',
+        category: 'Lesión/Piel',
+        severity: ObservationSeverity.medium,
+      );
+
+      expect(obs.severity, equals(ObservationSeverity.medium));
+      expect(obs.category, equals('Lesión/Piel'));
+    });
+
+    test('createObservation accepts mediaUrl for photo attachment (DAC05-209)',
+        () async {
+      final obs = await caregiverRepo.createObservation(
+        'p-elena',
+        text: 'Foto del estado de la piel adjunta.',
+        category: 'Lesión/Piel',
+        severity: ObservationSeverity.low,
+        mediaUrl: 'https://blob.azure.net/test/foto.jpg',
+      );
+
+      expect(obs.mediaUrl, equals('https://blob.azure.net/test/foto.jpg'));
+      expect(obs.severity, equals(ObservationSeverity.low));
+    });
+
+    test('createObservation without severity leaves it null (DAC05-209)',
+        () async {
+      final obs = await caregiverRepo.createObservation(
+        'p-elena',
+        text: 'Revisión general sin incidentes.',
+      );
+
+      expect(obs.severity, isNull);
+    });
+
     test('createHandoverNote registers shift change note', () async {
       final note = await caregiverRepo.createHandoverNote(
         'p-elena',

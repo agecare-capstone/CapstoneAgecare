@@ -8,6 +8,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/alerts/presentation/alerts_screen.dart';
 import '../../features/alerts/presentation/alert_detail_screen.dart';
+import '../../features/caregiver/presentation/caregiver_professional_profile_screen.dart';
 import '../../features/caregiver/presentation/checkin_screen.dart';
 import '../../features/caregiver/presentation/handover_screen.dart';
 import '../../features/caregiver/presentation/incident_screen.dart';
@@ -136,6 +137,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cg/incident', builder: (_, st) => IncidentScreen(patientId: st.uri.queryParameters['patient']!)),
       GoRoute(path: '/cg/handover', builder: (_, st) => HandoverScreen(patientId: st.uri.queryParameters['patient']!)),
       GoRoute(path: '/cg/reports', builder: (_, __) => const CaregiverReportsScreen()),
+      GoRoute(path: '/cg/profile', builder: (_, __) => const CaregiverProfessionalProfileScreen()),
 
       // --- Marketplace ---
       GoRoute(path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),

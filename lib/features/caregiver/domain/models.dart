@@ -318,6 +318,7 @@ class CaregiverProfile {
     this.languages = const [],
     this.zones = const [],
     this.certifications = const [],
+    this.isPublished = false,
   });
 
   final String headline;
@@ -327,6 +328,7 @@ class CaregiverProfile {
   final List<String> languages;
   final List<String> zones;
   final List<String> certifications;
+  final bool isPublished;
 
   CaregiverProfile copyWith({
     String? headline,
@@ -336,6 +338,7 @@ class CaregiverProfile {
     List<String>? languages,
     List<String>? zones,
     List<String>? certifications,
+    bool? isPublished,
   }) =>
       CaregiverProfile(
         headline: headline ?? this.headline,
@@ -345,6 +348,7 @@ class CaregiverProfile {
         languages: languages ?? this.languages,
         zones: zones ?? this.zones,
         certifications: certifications ?? this.certifications,
+        isPublished: isPublished ?? this.isPublished,
       );
 
   factory CaregiverProfile.fromJson(Map<String, dynamic> json) =>
@@ -363,6 +367,7 @@ class CaregiverProfile {
         certifications: ((json['certifications'] ?? []) as List)
             .map((e) => e.toString())
             .toList(),
+        isPublished: (json['is_published'] ?? false) as bool,
       );
 
   Map<String, dynamic> toJson() => {
@@ -373,6 +378,7 @@ class CaregiverProfile {
         'languages': languages,
         'zones': zones,
         'certifications': certifications,
+        'is_published': isPublished,
       };
 }
 

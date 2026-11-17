@@ -14,6 +14,7 @@ class CaregiverProfileSummary {
     this.zones = const [],
     this.specialties = const [],
     this.pricePerHour,
+    this.yearsExperience,
   });
 
   final String profileId;
@@ -25,6 +26,7 @@ class CaregiverProfileSummary {
   final List<String> zones;
   final List<String> specialties;
   final double? pricePerHour;
+  final int? yearsExperience;
 
   factory CaregiverProfileSummary.fromJson(Map<String, dynamic> json) =>
       CaregiverProfileSummary(
@@ -40,6 +42,7 @@ class CaregiverProfileSummary {
             .map((e) => e.toString())
             .toList(),
         pricePerHour: (json['price_per_hour'] as num?)?.toDouble(),
+        yearsExperience: json['years_experience'] as int?,
       );
 }
 

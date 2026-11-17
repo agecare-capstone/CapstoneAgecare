@@ -118,6 +118,7 @@ class MarketplaceRepositoryMock implements MarketplaceRepository {
         zones: ['Polanco', 'Roma Norte', 'Condesa'],
         specialties: ['Alzheimer', 'Movilidad reducida', 'Postoperatorio'],
         pricePerHour: 120,
+        yearsExperience: 8,
       ),
       const CaregiverProfileSummary(
         profileId: 'cg-2',
@@ -129,6 +130,7 @@ class MarketplaceRepositoryMock implements MarketplaceRepository {
         zones: ['Coyoacán', 'Del Valle'],
         specialties: ['Diabetes', 'Control de medicación', 'Curaciones'],
         pricePerHour: 150,
+        yearsExperience: 12,
       ),
       const CaregiverProfileSummary(
         profileId: 'cg-3',
@@ -140,6 +142,7 @@ class MarketplaceRepositoryMock implements MarketplaceRepository {
         zones: ['Satélite', 'Naucalpan'],
         specialties: ['Estimulación cognitiva', 'Acompañamiento', 'Parkinson'],
         pricePerHour: 110,
+        yearsExperience: 5,
       ),
     ]);
 

@@ -89,6 +89,9 @@ class SpeechService {
 
   Future<void> playUrl(String url) => _player.play(UrlSource(url));
   Future<void> stopPlayback() => _player.stop();
+  Future<void> pausePlayback() => _player.pause();
+  Future<void> resumePlayback() => _player.resume();
+  Stream<PlayerState> get playerStateStream => _player.onPlayerStateChanged;
 
   Future<void> dispose() async {
     await _recorder.dispose();

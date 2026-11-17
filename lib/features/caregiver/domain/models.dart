@@ -193,12 +193,32 @@ class CaregiverToday {
 // Observación
 // ---------------------------------------------------------------------------
 
+/// Severidad de una observación (DAC05-206).
+enum ObservationSeverity {
+  low('low', 'Baja'),
+  medium('medium', 'Media'),
+  high('high', 'Alta');
+
+  const ObservationSeverity(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+
+  static ObservationSeverity? fromApi(String? value) {
+    if (value == null) return null;
+    return ObservationSeverity.values.firstWhere(
+      (s) => s.apiValue == value,
+      orElse: () => ObservationSeverity.low,
+    );
+  }
+}
+
 /// Observación registrada por la cuidadora en la bitácora.
 class Observation {
   const Observation({
     required this.id,
     required this.text,
     this.category,
+    this.severity,
     this.mediaUrl,
     required this.createdAt,
     required this.authorName,
@@ -207,6 +227,7 @@ class Observation {
   final String id;
   final String text;
   final String? category;
+  final ObservationSeverity? severity;
   final String? mediaUrl;
   final DateTime createdAt;
   final String authorName;
@@ -215,6 +236,7 @@ class Observation {
         id: (json['id'] ?? json['observation_id']).toString(),
         text: (json['text'] ?? '') as String,
         category: json['category'] as String?,
+        severity: ObservationSeverity.fromApi(json['severity'] as String?),
         mediaUrl: json['media_url'] as String?,
         createdAt: json['created_at'] != null
             ? DateTime.parse(json['created_at'] as String).toLocal()

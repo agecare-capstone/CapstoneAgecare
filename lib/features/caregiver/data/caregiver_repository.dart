@@ -32,6 +32,7 @@ abstract class CaregiverRepository {
     required String text,
     String? mediaUrl,
     String? category,
+    ObservationSeverity? severity,
   });
 
   // Incidentes
@@ -157,6 +158,7 @@ class CaregiverRepositoryHttp implements CaregiverRepository {
     required String text,
     String? mediaUrl,
     String? category,
+    ObservationSeverity? severity,
   }) async {
     final res = await _api.post<Map<String, dynamic>>(
       '/patients/$patientId/observations',
@@ -164,6 +166,7 @@ class CaregiverRepositoryHttp implements CaregiverRepository {
         'text': text,
         if (mediaUrl != null) 'media_url': mediaUrl,
         if (category != null) 'category': category,
+        if (severity != null) 'severity': severity.apiValue,
       },
     );
     return Observation.fromJson(res);
@@ -439,12 +442,14 @@ class CaregiverRepositoryMock implements CaregiverRepository {
     required String text,
     String? mediaUrl,
     String? category,
+    ObservationSeverity? severity,
   }) async {
     await Future.delayed(const Duration(milliseconds: 350));
     final obs = Observation(
       id: 'o-${DateTime.now().millisecondsSinceEpoch}',
       text: text,
       category: category,
+      severity: severity,
       mediaUrl: mediaUrl,
       createdAt: DateTime.now(),
       authorName: 'Elena Fuentes',

@@ -9,12 +9,15 @@ import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/models.dart';
 
-/// Paywall de AgeCare Premium para la cuidadora.
+/// Paywall de AgeCare Premium para la cuidadora y la familia (DAC05-33).
 ///
 /// Integra `in_app_purchase`: consulta el producto configurado en las tiendas
 /// (Google Play / App Store) y lanza la compra. Tras una compra exitosa se
-/// llama a POST /caregiver/plan/upgrade para activar el plan en el backend.
+/// activa el plan en el backend: la cuidadora con POST /caregiver/plan/upgrade
+/// (también destaca su perfil) y el resto con POST /users/me/plan/upgrade.
 ///
 /// IMPORTANTE: para producción se requiere configurar el producto
 /// [_kProductId] en Google Play Console y App Store Connect, además de los
@@ -64,12 +67,28 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     super.dispose();
   }
 
+  bool get _isCaregiver =>
+      ref.read(currentUserProvider)?.primaryRole == RoleType.caregiver;
+
+  /// Lee el plan actual para no ofrecer Premium a quien ya lo tiene.
+  Future<void> _loadCurrentPlan() async {
+    try {
+      final data = await ref
+          .read(apiClientProvider)
+          .get<Map<String, dynamic>>('/users/me/plan');
+      _isPremium = data['plan'] == 'premium';
+    } catch (_) {
+      // Sin conexión o en modo demo: se muestra la oferta.
+    }
+  }
+
   Future<void> _init() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
+      if (!AppConfig.useMocks) await _loadCurrentPlan();
       // En modo demo no dependemos de la tienda.
       if (AppConfig.useMocks || kIsWeb) {
         setState(() {
@@ -130,18 +149,18 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   /// Activa el plan Premium en el backend tras una compra exitosa.
   Future<void> _activateOnBackend() async {
     try {
-      await ref
-          .read(apiClientProvider)
-          .post<void>('/caregiver/plan/upgrade', data: {
-        'plan': 'premium_monthly',
-        'source': AppConfig.useMocks ? 'demo' : 'iap',
-      });
+      await ref.read(apiClientProvider).post<void>(
+          _isCaregiver ? '/caregiver/plan/upgrade' : '/users/me/plan/upgrade',
+          data: {
+            'plan': 'premium_monthly',
+            'source': AppConfig.useMocks ? 'demo' : 'iap',
+          });
       if (mounted) {
         setState(() {
           _isPremium = true;
           _purchasing = false;
         });
-        showAppSnackBar(context, '¡Bienvenida a AgeCare Premium!');
+        showAppSnackBar(context, '¡Listo! Tu cuenta ya es Premium.');
       }
     } catch (e) {
       if (mounted) {
@@ -200,29 +219,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     Text('Todo lo que incluye',
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 12),
-                    const _Benefit(
-                      icon: Icons.insights_rounded,
-                      title: 'Reportes avanzados',
-                      subtitle:
-                          'Tendencias de salud, adherencia y bienestar con más detalle.',
-                    ),
-                    const _Benefit(
-                      icon: Icons.groups_rounded,
-                      title: 'Más pacientes',
-                      subtitle:
-                          'Gestiona un número ilimitado de pacientes a tu cargo.',
-                    ),
-                    const _Benefit(
-                      icon: Icons.workspace_premium_rounded,
-                      title: 'Ofertas de trabajo premium',
-                      subtitle:
-                          'Acceso prioritario a las mejores ofertas del marketplace.',
-                    ),
-                    const _Benefit(
-                      icon: Icons.support_agent_rounded,
-                      title: 'Soporte prioritario',
-                      subtitle: 'Atención preferente cuando la necesites.',
-                    ),
+                    ...(_isCaregiver ? _caregiverBenefits : _familyBenefits),
                     const SizedBox(height: 16),
                     if (_error != null)
                       Padding(
@@ -264,6 +261,43 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     );
   }
 }
+
+const _caregiverBenefits = [
+  _Benefit(
+    icon: Icons.insights_rounded,
+    title: 'Reportes avanzados',
+    subtitle: 'Hasta 90 días de historial y exportación en PDF.',
+  ),
+  _Benefit(
+    icon: Icons.photo_camera_rounded,
+    title: 'Fotos en el chat familiar',
+    subtitle: 'Comparte fotos del día con la familia.',
+  ),
+  _Benefit(
+    icon: Icons.workspace_premium_rounded,
+    title: 'Ofertas de trabajo y perfil destacado',
+    subtitle: 'Acceso a ofertas y más visibilidad en el marketplace.',
+  ),
+];
+
+const _familyBenefits = [
+  _Benefit(
+    icon: Icons.auto_awesome_rounded,
+    title: 'Asistente IA sin límite',
+    subtitle:
+        'Pregunta lo que necesites sobre el cuidado. El plan gratuito tiene 10 preguntas al día.',
+  ),
+  _Benefit(
+    icon: Icons.insights_rounded,
+    title: 'Resumen de salud',
+    subtitle: 'Métricas de 30, 60 y 90 días para conversar con el médico.',
+  ),
+  _Benefit(
+    icon: Icons.support_agent_rounded,
+    title: 'Soporte prioritario',
+    subtitle: 'Atención preferente cuando la necesites.',
+  ),
+];
 
 class _Hero extends StatelessWidget {
   const _Hero({required this.price});
@@ -366,8 +400,7 @@ class _AlreadyPremiumView extends StatelessWidget {
     return const EmptyView(
       icon: Icons.verified_rounded,
       title: 'Ya eres Premium',
-      subtitle:
-          'Disfruta de reportes avanzados, pacientes ilimitados y ofertas premium.',
+      subtitle: 'Ya tienes todos los beneficios de AgeCare Premium.',
     );
   }
 }

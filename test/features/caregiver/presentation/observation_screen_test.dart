@@ -38,8 +38,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // No ingresamos texto: el campo está vacío por defecto.
-      final btn = tester.widget<FilledButton>(find.byType(FilledButton));
-      // onPressed sigue siendo no-null pero la validación fallará al presionar.
+      // El botón sigue activo, pero la validación falla al presionarlo.
       // Probamos que al intentar guardar se muestra el error de validación.
       await tester.tap(find.byType(FilledButton));
       await tester.pump();

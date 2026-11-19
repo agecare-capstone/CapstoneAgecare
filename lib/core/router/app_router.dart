@@ -29,6 +29,7 @@ import '../../features/patients/presentation/invite_member_screen.dart';
 import '../../features/patients/presentation/care_circle_screen.dart';
 import '../../features/premium/presentation/premium_screen.dart';
 import '../../features/health/presentation/thresholds_screen.dart';
+import '../../features/health/presentation/health_summary_screen.dart';
 import '../../features/profile/presentation/notification_settings_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/main_shell.dart';
@@ -72,6 +73,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', builder: (_, __) => const MainShell()),
 
       // --- Salud ---
+      GoRoute(
+        path: '/health/summary',
+        builder: (_, __) => const HealthSummaryScreen(),
+      ),
       GoRoute(
         path: '/health/vital/:type',
         builder: (_, st) =>

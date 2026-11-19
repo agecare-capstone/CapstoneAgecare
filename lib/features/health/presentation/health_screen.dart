@@ -58,6 +58,30 @@ class HealthScreen extends ConsumerWidget {
               orElse: () => const SizedBox.shrink(),
             ),
             const SizedBox(height: 12),
+            // Resumen de 30/60/90 días (feedback del equipo).
+            AppCard(
+              key: const Key('open-health-summary'),
+              onTap: () => context.push('/health/summary'),
+              child: const Row(
+                children: [
+                  Icon(Icons.insights_rounded, color: AppColors.primary),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Resumen de salud',
+                            style: TextStyle(fontWeight: FontWeight.w700)),
+                        Text('Promedios de los últimos 30, 60 o 90 días',
+                            style: TextStyle(color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             if (vitals.isEmpty)
               const EmptyView(
                   icon: Icons.watch_outlined,
@@ -67,11 +91,15 @@ class HealthScreen extends ConsumerWidget {
             else ...[
               _VitalGroup(
                 title: 'Vitales',
-                vitals: vitals.where((v) => v.type.isCoreVital).toList(),
+                vitals: vitals
+                    .where((v) => v.type.isCoreVital && !v.type.isHidden)
+                    .toList(),
               ),
               _VitalGroup(
                 title: 'Actividad',
-                vitals: vitals.where((v) => !v.type.isCoreVital).toList(),
+                vitals: vitals
+                    .where((v) => !v.type.isCoreVital && !v.type.isHidden)
+                    .toList(),
               ),
             ],
           ],

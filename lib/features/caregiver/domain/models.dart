@@ -380,60 +380,84 @@ class CaregiverProfile {
 // Reporte de desempeño
 // ---------------------------------------------------------------------------
 
-/// Métricas de desempeño de la cuidadora para el periodo.
-class CaregiverReport {
-  const CaregiverReport({
-    required this.period,
-    this.tasksCompleted = 0,
-    this.punctualityPct = 0,
-    this.checkinsOnTime = 0,
-    this.observationsLogged = 0,
-    this.weeklyTasks = const [],
+/// Actividad de un día del reporte (serie diaria, DAC05-93).
+class ReportDay {
+  const ReportDay({
+    required this.date,
+    this.dosesGiven = 0,
+    this.observations = 0,
+    this.tasksDone = 0,
   });
 
-  final String period;
-  final int tasksCompleted;
-  final double punctualityPct;
-  final int checkinsOnTime;
-  final int observationsLogged;
+  final DateTime date;
+  final int dosesGiven;
+  final int observations;
+  final int tasksDone;
 
-  /// Serie semanal de tareas completadas (para la gráfica).
-  final List<ReportPoint> weeklyTasks;
+  int get total => dosesGiven + observations + tasksDone;
 
-  factory CaregiverReport.fromJson(Map<String, dynamic> json) => CaregiverReport(
-        period: (json['period'] ?? '') as String,
-        tasksCompleted: (json['tasks_completed'] ?? 0) as int,
-        punctualityPct: (json['punctuality_pct'] ?? 0) is num
-            ? (json['punctuality_pct'] as num).toDouble()
-            : 0,
-        checkinsOnTime: (json['checkins_on_time'] ?? 0) as int,
-        observationsLogged: (json['observations_logged'] ?? 0) as int,
-        weeklyTasks: ((json['weekly_tasks'] ?? []) as List)
-            .map((e) => ReportPoint.fromJson(e as Map<String, dynamic>))
-            .toList(),
+  factory ReportDay.fromJson(Map<String, dynamic> json) => ReportDay(
+        date: DateTime.parse(json['date'] as String),
+        dosesGiven: (json['doses_given'] as num?)?.toInt() ?? 0,
+        observations: (json['observations'] as num?)?.toInt() ?? 0,
+        tasksDone: (json['tasks_done'] as num?)?.toInt() ?? 0,
       );
-
-  Map<String, dynamic> toJson() => {
-        'period': period,
-        'tasks_completed': tasksCompleted,
-        'punctuality_pct': punctualityPct,
-        'checkins_on_time': checkinsOnTime,
-        'observations_logged': observationsLogged,
-        'weekly_tasks': weeklyTasks.map((e) => e.toJson()).toList(),
-      };
 }
 
-/// Un punto de la serie semanal del reporte.
-class ReportPoint {
-  const ReportPoint({required this.label, required this.value});
+/// Reporte de actividad de la cuidadora en un rango de fechas
+/// (GET /caregiver/reports?date_from&date_to).
+class CaregiverReport {
+  const CaregiverReport({
+    required this.from,
+    required this.to,
+    this.tasksDone = 0,
+    this.dosesGiven = 0,
+    this.adherencePct = 0,
+    this.observations = 0,
+    this.incidents = 0,
+    this.daily = const [],
+  });
 
-  final String label;
-  final double value;
+  final DateTime from;
+  final DateTime to;
+  final int tasksDone;
+  final int dosesGiven;
+  final double adherencePct;
+  final int observations;
+  final int incidents;
+  final List<ReportDay> daily;
 
-  factory ReportPoint.fromJson(Map<String, dynamic> json) => ReportPoint(
-        label: (json['label'] ?? '') as String,
-        value: (json['value'] as num).toDouble(),
-      );
+  int get days => to.difference(from).inDays + 1;
 
-  Map<String, dynamic> toJson() => {'label': label, 'value': value};
+  String get period {
+    String d(DateTime x) =>
+        '${x.day.toString().padLeft(2, '0')}/${x.month.toString().padLeft(2, '0')}/${x.year}';
+    return 'Del ${d(from)} al ${d(to)}';
+  }
+
+  factory CaregiverReport.fromJson(Map<String, dynamic> json,
+      {required DateTime from, required DateTime to}) {
+    final stats = (json['stats'] ?? const <String, dynamic>{}) as Map<String, dynamic>;
+    return CaregiverReport(
+      from: from,
+      to: to,
+      tasksDone: (stats['tasks_done'] as num?)?.toInt() ?? 0,
+      dosesGiven: (stats['doses_given'] as num?)?.toInt() ?? 0,
+      adherencePct: (stats['adherence_pct'] as num?)?.toDouble() ?? 0,
+      observations: (stats['observations'] as num?)?.toInt() ?? 0,
+      incidents: (stats['incidents'] as num?)?.toInt() ?? 0,
+      daily: [
+        for (final d in (json['daily'] ?? const []) as List)
+          ReportDay.fromJson(d as Map<String, dynamic>),
+      ],
+    );
+  }
+}
+
+/// El plan gratuito solo ve los últimos 30 días (el backend responde 402).
+class PremiumRequiredException implements Exception {
+  const PremiumRequiredException();
+
+  /// Días que muestra el plan gratuito.
+  static const freeDays = 30;
 }

@@ -21,6 +21,7 @@ abstract class CaregiverRepository {
   Future<CaregiverReport> getReport({required DateTime from, required DateTime to});
   Future<CaregiverProfile> getProfile();
   Future<CaregiverProfile> updateProfile(CaregiverProfile profile);
+  Future<CaregiverProfile> publishProfile();
 
   // Tareas
   Future<List<CareTask>> listTasks(String patientId);
@@ -121,6 +122,15 @@ class CaregiverRepositoryHttp implements CaregiverRepository {
     final res = await _api.put<Map<String, dynamic>>(
       '/caregiver/profile',
       data: profile.toJson(),
+    );
+    return CaregiverProfile.fromJson(res);
+  }
+
+  @override
+  Future<CaregiverProfile> publishProfile() async {
+    final res = await _api.post<Map<String, dynamic>>(
+      '/caregiver/profile/publish',
+      data: {},
     );
     return CaregiverProfile.fromJson(res);
   }
@@ -406,6 +416,13 @@ class CaregiverRepositoryMock implements CaregiverRepository {
   Future<CaregiverProfile> updateProfile(CaregiverProfile profile) async {
     await Future.delayed(const Duration(milliseconds: 400));
     _profile = profile;
+    return _profile;
+  }
+
+  @override
+  Future<CaregiverProfile> publishProfile() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    _profile = _profile.copyWith(isPublished: true);
     return _profile;
   }
 

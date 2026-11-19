@@ -212,6 +212,21 @@ class _CaregiverCard extends StatelessWidget {
                 ),
             ],
           ),
+          if (caregiver.yearsExperience != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium_outlined,
+                    size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text(
+                  '${caregiver.yearsExperience} años de experiencia',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ],
           if (caregiver.specialties.isNotEmpty) ...[
             const SizedBox(height: 10),
             Wrap(
@@ -223,6 +238,21 @@ class _CaregiverCard extends StatelessWidget {
               ],
             ),
           ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context
+                  .push('/marketplace/caregivers/${caregiver.profileId}'),
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+              label: const Text('Contactar'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                textStyle: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
         ],
       ),
     );

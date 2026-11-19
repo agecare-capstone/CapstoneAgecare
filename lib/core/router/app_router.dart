@@ -35,6 +35,7 @@ import '../../features/shell/main_shell.dart';
 import '../../features/shell/splash_screen.dart';
 import '../../features/wearable/presentation/wearable_link_screen.dart';
 import '../../features/dev/presentation/theme_gallery_screen.dart';
+import '../../features/nutrition/presentation/nutrition_screen.dart';
 
 /// Rutas públicas (accesibles sin sesión).
 const _publicRoutes = {'/login', '/register', '/recover', '/splash'};
@@ -136,6 +137,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cg/incident', builder: (_, st) => IncidentScreen(patientId: st.uri.queryParameters['patient']!)),
       GoRoute(path: '/cg/handover', builder: (_, st) => HandoverScreen(patientId: st.uri.queryParameters['patient']!)),
       GoRoute(path: '/cg/reports', builder: (_, __) => const CaregiverReportsScreen()),
+      // Alimentación e hidratación (DAC05-95).
+      GoRoute(path: '/nutrition', builder: (_, st) => NutritionScreen(patientId: st.uri.queryParameters['patient']!)),
 
       // --- Marketplace ---
       GoRoute(path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),

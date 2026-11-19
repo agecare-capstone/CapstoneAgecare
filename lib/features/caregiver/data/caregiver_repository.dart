@@ -16,7 +16,9 @@ abstract class CaregiverRepository {
   Future<CaregiverPlan> upgradePlan();
 
   // Reportes / perfil
-  Future<CaregiverReport> getReport();
+  /// Reporte entre [from] y [to] (inclusive). Lanza [PremiumRequiredException]
+  /// si el plan gratuito pide más de 30 días atrás.
+  Future<CaregiverReport> getReport({required DateTime from, required DateTime to});
   Future<CaregiverProfile> getProfile();
   Future<CaregiverProfile> updateProfile(CaregiverProfile profile);
 
@@ -95,9 +97,16 @@ class CaregiverRepositoryHttp implements CaregiverRepository {
   }
 
   @override
-  Future<CaregiverReport> getReport() async {
-    final data = await _api.get<Map<String, dynamic>>('/caregiver/reports');
-    return CaregiverReport.fromJson(data);
+  Future<CaregiverReport> getReport({required DateTime from, required DateTime to}) async {
+    String day(DateTime d) => d.toIso8601String().substring(0, 10);
+    try {
+      final data = await _api.get<Map<String, dynamic>>('/caregiver/reports',
+          query: {'date_from': day(from), 'date_to': day(to)});
+      return CaregiverReport.fromJson(data, from: from, to: to);
+    } on ApiException catch (e) {
+      if (e.statusCode == 402) throw const PremiumRequiredException();
+      rethrow;
+    }
   }
 
   @override
@@ -355,23 +364,32 @@ class CaregiverRepositoryMock implements CaregiverRepository {
   }
 
   @override
-  Future<CaregiverReport> getReport() async {
+  Future<CaregiverReport> getReport({required DateTime from, required DateTime to}) async {
     await Future.delayed(const Duration(milliseconds: 350));
-    return const CaregiverReport(
-      period: 'Últimos 7 días',
-      tasksCompleted: 34,
-      punctualityPct: 92,
-      checkinsOnTime: 6,
-      observationsLogged: 18,
-      weeklyTasks: [
-        ReportPoint(label: 'Lun', value: 5),
-        ReportPoint(label: 'Mar', value: 6),
-        ReportPoint(label: 'Mié', value: 4),
-        ReportPoint(label: 'Jue', value: 5),
-        ReportPoint(label: 'Vie', value: 6),
-        ReportPoint(label: 'Sáb', value: 4),
-        ReportPoint(label: 'Dom', value: 4),
-      ],
+    if (_plan.tier.isFree &&
+        DateTime.now().difference(from).inDays > PremiumRequiredException.freeDays) {
+      throw const PremiumRequiredException();
+    }
+    final days = to.difference(from).inDays + 1;
+    final daily = [
+      for (var i = 0; i < days; i++)
+        ReportDay(
+          date: from.add(Duration(days: i)),
+          dosesGiven: 2 + i % 2,
+          observations: i % 3,
+          tasksDone: 4 + i % 3,
+        ),
+    ];
+    final doses = daily.fold<int>(0, (a, d) => a + d.dosesGiven);
+    return CaregiverReport(
+      from: from,
+      to: to,
+      tasksDone: daily.fold<int>(0, (a, d) => a + d.tasksDone),
+      dosesGiven: doses,
+      adherencePct: 92,
+      observations: daily.fold<int>(0, (a, d) => a + d.observations),
+      incidents: 1,
+      daily: daily,
     );
   }
 

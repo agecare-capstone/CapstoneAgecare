@@ -43,8 +43,13 @@ final caregiverPlanProvider = FutureProvider<CaregiverPlan>((ref) {
 });
 
 /// Reporte de desempeño de la cuidadora.
-final caregiverReportProvider = FutureProvider<CaregiverReport>((ref) {
-  return ref.watch(caregiverRepositoryProvider).getReport();
+/// Reporte de los últimos [days] días, hasta hoy (DAC05-93).
+final caregiverReportProvider =
+    FutureProvider.autoDispose.family<CaregiverReport, int>((ref, days) {
+  final now = DateTime.now();
+  final to = DateTime(now.year, now.month, now.day);
+  final from = to.subtract(Duration(days: days - 1));
+  return ref.watch(caregiverRepositoryProvider).getReport(from: from, to: to);
 });
 
 /// Perfil profesional de la cuidadora.

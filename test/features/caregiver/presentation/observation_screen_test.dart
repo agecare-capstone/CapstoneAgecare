@@ -27,10 +27,9 @@ void main() {
           find.byType(TextFormField), 'Paciente con buen ánimo.');
       await tester.pump();
 
-      // Con descripción, el botón no debe estar deshabilitado (onPressed != null).
-      final btns = tester.widgetList<FilledButton>(find.byType(FilledButton));
-      expect(btns.any((b) => b.onPressed != null), isTrue,
-          reason: 'Al menos un FilledButton debe estar habilitado');
+      final btn = tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(btn.onPressed, isNotNull,
+          reason: 'El botón debe estar habilitado con descripción');
     });
 
     testWidgets('botón guardar deshabilitado cuando el campo está vacío',
@@ -39,7 +38,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // No ingresamos texto: el campo está vacío por defecto.
-      // Al presionar guardar la validación debe mostrar el error.
+      // El botón sigue activo, pero la validación falla al presionarlo.
+      // Probamos que al intentar guardar se muestra el error de validación.
       await tester.tap(find.byType(FilledButton));
       await tester.pump();
 

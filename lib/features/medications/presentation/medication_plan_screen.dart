@@ -14,7 +14,8 @@ import '../domain/models.dart';
 /// Formulario para crear o editar un medicamento del plan (ticket AGE-402).
 /// Al guardar, programa recordatorios locales para las próximas dosis.
 class MedicationPlanScreen extends ConsumerStatefulWidget {
-  const MedicationPlanScreen({super.key, required this.patientId, this.medicationId});
+  const MedicationPlanScreen(
+      {super.key, required this.patientId, this.medicationId});
 
   final String patientId;
   final String? medicationId;
@@ -132,14 +133,49 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
     }
   }
 
+  /// Frase que resume el remedio: "Losartán 50 mg, a las 08:00 y 20:00,
+  /// todos los días desde hoy".
+  Future<bool> _confirm(NewMedication data) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+            _isEdit ? '¿Guardar los cambios?' : '¿Agregar este remedio nuevo?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(medicationSentence(data),
+                key: const Key('medication-sentence'),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Text(
+              _isEdit
+                  ? 'Los recordatorios de la cuidadora y del adulto mayor se ajustarán a estos datos.'
+                  : 'Desde ese momento aparecerá en los recordatorios de la cuidadora y del adulto mayor.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Revisar')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(_isEdit ? 'Sí, guardar' : 'Sí, agregar')),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_schedule.isEmpty) {
       showAppSnackBar(context, 'Agrega al menos un horario.', error: true);
       return;
     }
-    setState(() => _saving = true);
-    final repo = ref.read(medicationsRepositoryProvider);
     final data = NewMedication(
       name: _name.text.trim(),
       dose: _dose.text.trim(),
@@ -150,6 +186,10 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
       startDate: _startDate,
       endDate: _endDate,
     );
+    // Confirmación en palabras simples: que se note que se carga algo nuevo.
+    if (!await _confirm(data)) return;
+    setState(() => _saving = true);
+    final repo = ref.read(medicationsRepositoryProvider);
     try {
       final med = _isEdit
           ? await repo.updateMedication(
@@ -162,8 +202,11 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
       ref.invalidate(medicationsProvider);
       ref.invalidate(todayDosesProvider);
       if (mounted) {
-        showAppSnackBar(context,
-            _isEdit ? 'Medicamento actualizado' : 'Medicamento agregado');
+        showAppSnackBar(
+            context,
+            _isEdit
+                ? 'Listo: se guardaron los cambios de ${data.name}.'
+                : 'Listo: ${data.name} quedó en el plan. Se avisará a la hora de cada toma.');
         context.pop();
       }
     } catch (e) {
@@ -200,7 +243,8 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(_isEdit ? 'Editar medicamento' : 'Nuevo medicamento')),
+          title: Text(
+              _isEdit ? 'Cambiar un remedio' : 'Agregar un remedio nuevo')),
       body: _loading
           ? const LoadingView()
           : Form(
@@ -208,6 +252,17 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                 children: [
+                  // Qué se está haciendo, en palabras simples (feedback del equipo).
+                  Text(
+                    _isEdit
+                        ? 'Estás cambiando un remedio que ya está en el plan.'
+                        : 'Estás agregando un remedio nuevo al plan de tomas. '
+                            'Revisa nombre, cantidad y horarios: así aparecerá en '
+                            'los recordatorios de la cuidadora y del adulto mayor.',
+                    key: const Key('medication-intro'),
+                    style: const TextStyle(fontSize: 16, height: 1.35),
+                  ),
+                  const SizedBox(height: 12),
                   const MedicalDisclaimer(),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -227,8 +282,7 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
                           controller: _dose,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
-                          decoration:
-                              const InputDecoration(labelText: 'Dosis'),
+                          decoration: const InputDecoration(labelText: 'Dosis'),
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? 'Requerido'
                               : null,
@@ -294,8 +348,9 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
                         ? 'Sin fecha de fin'
                         : DateFormat('d MMM yyyy', 'es').format(_endDate!),
                     onTap: () => _pickDate(isStart: false),
-                    onClear:
-                        _endDate == null ? null : () => setState(() => _endDate = null),
+                    onClear: _endDate == null
+                        ? null
+                        : () => setState(() => _endDate = null),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -315,7 +370,9 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
                             width: 22,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white))
-                        : Text(_isEdit ? 'Guardar cambios' : 'Guardar'),
+                        : Text(_isEdit
+                            ? 'Guardar cambios'
+                            : 'Agregar remedio al plan'),
                   ),
                 ],
               ),
@@ -355,4 +412,27 @@ class _DateField extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Frase en lenguaje simple de lo que se está agregando, para que la
+/// cuidadora y el adulto mayor entiendan el remedio nuevo (feedback del equipo).
+String medicationSentence(NewMedication d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  String date(DateTime x) => '${two(x.day)}/${two(x.month)}';
+  final now = DateTime.now();
+  final amount = [d.dose, d.unit].where((p) => p.trim().isNotEmpty).join(' ');
+  final times = d.schedule.isEmpty
+      ? 'sin horario fijo'
+      : d.schedule.length == 1
+          ? 'a las ${d.schedule.single}'
+          : 'a las ${d.schedule.sublist(0, d.schedule.length - 1).join(', ')} y ${d.schedule.last}';
+  final start = d.startDate;
+  final from = (start.year == now.year &&
+          start.month == now.month &&
+          start.day == now.day)
+      ? 'desde hoy'
+      : 'desde el ${date(start)}';
+  final until = d.endDate == null ? '' : ' hasta el ${date(d.endDate!)}';
+  return '${d.name} ${amount.isEmpty ? '' : '$amount, '}$times, todos los días $from$until.'
+      .replaceAll('  ', ' ');
 }

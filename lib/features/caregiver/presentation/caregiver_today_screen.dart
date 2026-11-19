@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../nutrition/presentation/nutrition_screen.dart';
 import '../application/caregiver_providers.dart';
 import '../data/caregiver_repository.dart';
 import '../domain/models.dart';
@@ -40,6 +41,8 @@ class CaregiverTodayScreen extends ConsumerWidget {
               _PatientSummary(today: today),
               const SizedBox(height: 16),
               _QuickActions(patientId: today.patientId),
+              const SizedBox(height: 16),
+              NutritionSummaryCard(patientId: today.patientId),
               const SizedBox(height: 20),
               Text('Tareas de hoy',
                   style: Theme.of(context).textTheme.titleMedium),

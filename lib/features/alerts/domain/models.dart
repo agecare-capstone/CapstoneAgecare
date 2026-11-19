@@ -13,6 +13,7 @@ enum AlertType {
   wearableOffline('wearable_offline', 'Wearable sin conexión', Icons.watch_off_rounded),
   sos('sos', 'Alerta SOS', Icons.sos_rounded),
   checkinMissed('checkin_missed', 'Check-in sin realizar', Icons.event_busy_rounded),
+  noIntake('no_intake', 'Sin registro de comida ni líquidos', Icons.no_food_rounded),
   other('other', 'Alerta', Icons.notifications_active_rounded);
 
   const AlertType(this.apiValue, this.label, this.icon);

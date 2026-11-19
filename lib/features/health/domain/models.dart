@@ -13,11 +13,17 @@ enum VitalType {
   bloodPressure('blood_pressure', 'Presión arterial', 'mmHg',
       Icons.monitor_heart_rounded);
 
-  /// true para los 3 signos vitales "core" que se muestran siempre en Salud
-  /// (AGE-304): ritmo cardíaco, SpO2 y temperatura. El resto son datos de
-  /// actividad/sueño, que se agrupan aparte.
-  bool get isCoreVital =>
-      this == heartRate || this == spo2 || this == temperature;
+  /// true para los signos vitales "core" que se muestran siempre en Salud
+  /// (AGE-304): ritmo cardíaco y SpO2. El resto son datos de actividad/sueño,
+  /// que se agrupan aparte.
+  bool get isCoreVital => this == heartRate || this == spo2;
+
+  /// La temperatura no se muestra en la app (feedback del equipo: el reloj
+  /// no la mide y no aporta). El backend la sigue aceptando.
+  bool get isHidden => this == temperature;
+
+  /// Tipos de la API que la app no muestra.
+  static const hiddenApiValues = {'temperature'};
 
   const VitalType(this.apiValue, this.label, this.unit, this.icon);
 

@@ -13,6 +13,7 @@ enum AlertType {
   wearableOffline('wearable_offline', 'Wearable sin conexión', Icons.watch_off_rounded),
   sos('sos', 'Alerta SOS', Icons.sos_rounded),
   checkinMissed('checkin_missed', 'Check-in sin realizar', Icons.event_busy_rounded),
+  noIntake('no_intake', 'Sin registro de comida ni líquidos', Icons.no_food_rounded),
   other('other', 'Alerta', Icons.notifications_active_rounded);
 
   const AlertType(this.apiValue, this.label, this.icon);
@@ -21,11 +22,23 @@ enum AlertType {
   final String label;
   final IconData icon;
 
-  static AlertType fromApi(String value) => AlertType.values.firstWhere(
-        (t) => t.apiValue == value,
-        orElse: () => AlertType.other,
-      );
+  static AlertType fromApi(String value) {
+    // El backend llama "missed_dose" a la dosis omitida.
+    if (value == 'missed_dose') return AlertType.medicationMissed;
+    return AlertType.values.firstWhere(
+      (t) => t.apiValue == value,
+      orElse: () => AlertType.other,
+    );
+  }
+
+  /// Texto del botón para cerrar la alerta, en palabras simples para la
+  /// familia, la cuidadora y el adulto mayor.
+  String get resolveLabel =>
+      this == AlertType.medicationMissed ? 'Marcar como tomado' : 'Marcar como resuelto';
 }
+
+/// Texto del botón que indica que la alerta ya se vio (antes "Reconocer").
+const alertSeenLabel = 'Ya lo vi';
 
 /// Severidad de la alerta, con su color del design system.
 enum AlertSeverity {

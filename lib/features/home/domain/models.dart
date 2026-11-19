@@ -138,6 +138,9 @@ class TodaySummary {
         activeAlertsCount: (json['active_alerts_count'] ?? 0) as int,
         adherencePct: json['adherence_pct'] as int?,
         latestVitals: ((json['latest_vitals'] ?? []) as List)
+            // La temperatura no se muestra en la app.
+            .where((e) =>
+                (e as Map)['type'] != 'temperature' && e['icon'] != 'temperature')
             .map((e) => VitalReading.fromJson(e as Map<String, dynamic>))
             .toList(),
         topReason: json['top_reason'] as String?,

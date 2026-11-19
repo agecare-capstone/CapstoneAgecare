@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
@@ -88,7 +89,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       setState(() => _messages.add(reply.message));
       _scrollToBottom();
     } on ApiException catch (e) {
-      if (mounted) showAppSnackBar(context, e.message, error: true);
+      if (!mounted) return;
+      if (e.statusCode == 402) {
+        // Plan gratuito: tope diario de preguntas; Premium no tiene límite (DAC05-33).
+        await _showPremiumInvite(e.message);
+      } else {
+        showAppSnackBar(context, e.message, error: true);
+      }
     } catch (_) {
       if (mounted) {
         showAppSnackBar(
@@ -99,6 +106,27 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       if (mounted) setState(() => _sending = false);
     }
   }
+
+  Future<void> _showPremiumInvite(String message) => showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Llegaste al límite de hoy'),
+          content: Text(message),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Ahora no')),
+            FilledButton(
+              key: const Key('assistant-go-premium'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.push('/premium');
+              },
+              child: const Text('Ver Premium'),
+            ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {

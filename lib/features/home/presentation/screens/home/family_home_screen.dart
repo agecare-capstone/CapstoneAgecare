@@ -8,6 +8,7 @@ import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/widgets/common.dart';
 import '../../../../../core/widgets/medical_disclaimer.dart';
 import '../../../../auth/application/auth_controller.dart';
+import '../../../../nutrition/presentation/nutrition_screen.dart';
 import '../../../../patients/application/patients_providers.dart';
 import '../../../application/home_providers.dart';
 import '../../../domain/models.dart';
@@ -72,6 +73,10 @@ class FamilyHomeScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   const _TodayCard(),
                   const SizedBox(height: 16),
+                  if (selected != null) ...[
+                    NutritionSummaryCard(patientId: selected.patientId),
+                    const SizedBox(height: 16),
+                  ],
                   const _QuickActions(),
                   const SizedBox(height: 16),
                   const _WearableCard(),

@@ -225,26 +225,28 @@ void main() {
   testWidgets('Restablecer carga los valores recomendados (DAC05-196)',
       (tester) async {
     final repo = await pumpScreen(tester, RoleType.family);
-    const temp = VitalType.temperature;
-    await scrollTo(tester, temp);
+    // La temperatura ya no se muestra en la app: se prueba con el pulso.
+    const hr = VitalType.heartRate;
+    await scrollTo(tester, hr);
     await tester.pumpAndSettle();
 
-    final reset = inCard(temp,
+    final reset = inCard(hr,
         find.widgetWithText(TextButton, 'Restablecer a valores recomendados'));
     await tester.ensureVisible(reset);
     await tester.tap(reset);
     await tester.pump();
 
-    expect(tester.widget<TextField>(field(temp, 'Mínimo')).controller!.text,
-        '35.5');
-    expect(tester.widget<TextField>(field(temp, 'Máximo')).controller!.text,
-        '37.8');
+    expect(tester.widget<TextField>(field(hr, 'Mínimo')).controller!.text,
+        '50');
+    expect(tester.widget<TextField>(field(hr, 'Máximo')).controller!.text,
+        '110');
 
-    await tester.tap(saveButton(temp));
-    await tester.pumpAndSettle();
-    expect(
-        (repo.saved.single.minValue, repo.saved.single.maxValue), (35.5, 37.8));
-    expect(find.text('Umbral de Temperatura guardado.'), findsOneWidget);
+    expect(repo.saved, isEmpty); // Restablecer no guarda solo.
+  });
+
+  testWidgets('la temperatura ya no aparece en los umbrales', (tester) async {
+    await pumpScreen(tester, RoleType.family);
+    expect(find.textContaining('Temperatura'), findsNothing);
   });
 
   testWidgets('en un celular (375 px) no hay overflow (DAC05-196)',

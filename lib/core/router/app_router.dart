@@ -30,12 +30,14 @@ import '../../features/patients/presentation/invite_member_screen.dart';
 import '../../features/patients/presentation/care_circle_screen.dart';
 import '../../features/premium/presentation/premium_screen.dart';
 import '../../features/health/presentation/thresholds_screen.dart';
+import '../../features/health/presentation/health_summary_screen.dart';
 import '../../features/profile/presentation/notification_settings_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/shell/splash_screen.dart';
 import '../../features/wearable/presentation/wearable_link_screen.dart';
 import '../../features/dev/presentation/theme_gallery_screen.dart';
+import '../../features/nutrition/presentation/nutrition_screen.dart';
 
 /// Rutas públicas (accesibles sin sesión).
 const _publicRoutes = {'/login', '/register', '/recover', '/splash'};
@@ -73,6 +75,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', builder: (_, __) => const MainShell()),
 
       // --- Salud ---
+      GoRoute(
+        path: '/health/summary',
+        builder: (_, __) => const HealthSummaryScreen(),
+      ),
       GoRoute(
         path: '/health/vital/:type',
         builder: (_, st) =>
@@ -138,6 +144,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cg/handover', builder: (_, st) => HandoverScreen(patientId: st.uri.queryParameters['patient']!)),
       GoRoute(path: '/cg/reports', builder: (_, __) => const CaregiverReportsScreen()),
       GoRoute(path: '/cg/profile', builder: (_, __) => const CaregiverProfessionalProfileScreen()),
+      // Alimentación e hidratación (DAC05-95).
+      GoRoute(path: '/nutrition', builder: (_, st) => NutritionScreen(patientId: st.uri.queryParameters['patient']!)),
 
       // --- Marketplace ---
       GoRoute(path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),

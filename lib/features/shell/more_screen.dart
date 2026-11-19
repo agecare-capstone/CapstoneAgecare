@@ -18,7 +18,8 @@ class MoreScreen extends ConsumerWidget {
     final pq = patient != null ? '?patient=${patient.patientId}' : '';
 
     final items = <_MoreItem>[
-      _MoreItem(Icons.person_outline, 'Mi perfil', () => context.push('/profile')),
+      _MoreItem(
+          Icons.person_outline, 'Mi perfil', () => context.push('/profile')),
       _MoreItem(Icons.folder_outlined, 'Expediente y documentos',
           () => context.push('/documents$pq')),
       _MoreItem(Icons.storefront_outlined, 'Marketplace de cuidado',
@@ -31,9 +32,11 @@ class MoreScreen extends ConsumerWidget {
       if (role != RoleType.family)
         _MoreItem(Icons.pin_outlined, 'Unirme con un código',
             () => context.push('/invite/accept')),
-      if (role == RoleType.caregiver) ...[
+      // Premium para la familia y la cuidadora (DAC05-33).
+      if (role == RoleType.family || role == RoleType.caregiver)
         _MoreItem(Icons.workspace_premium_outlined, 'AgeCare Premium',
             () => context.push('/premium')),
+      if (role == RoleType.caregiver) ...[
         _MoreItem(Icons.insights_outlined, 'Mis reportes',
             () => context.push('/cg/reports')),
       ],
@@ -51,8 +54,9 @@ class MoreScreen extends ConsumerWidget {
           ListTile(
             leading: CircleAvatar(
               radius: 26,
-              backgroundImage:
-                  user?.avatarUrl != null ? NetworkImage(user!.avatarUrl!) : null,
+              backgroundImage: user?.avatarUrl != null
+                  ? NetworkImage(user!.avatarUrl!)
+                  : null,
               child: user?.avatarUrl == null
                   ? Text(_initials(user?.fullName ?? '?'))
                   : null,

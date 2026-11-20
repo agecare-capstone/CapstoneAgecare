@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/wearable/health_connect_sync.dart';
+import '../../core/wearable/live_sync.dart';
 import '../alerts/presentation/sos_button.dart';
 import '../auth/application/auth_controller.dart';
 import '../auth/domain/models.dart';
@@ -29,25 +30,51 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserver {
+class _MainShellState extends ConsumerState<MainShell>
+    with WidgetsBindingObserver {
   int _index = 0;
+
+  /// Cada 10 s mientras la app está abierta: envía lo nuevo del reloj y
+  /// recarga los signos vitales en pantalla.
+  late final LiveSync _live = LiveSync(onTick: _liveTick);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _autoSyncWearable());
+    _live.start();
   }
 
   @override
   void dispose() {
+    _live.stop();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _autoSyncWearable();
+    if (state == AppLifecycleState.resumed) {
+      _autoSyncWearable();
+      _live.start();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _live.stop(); // en segundo plano no se sincroniza (batería)
+    }
+  }
+
+  Future<void> _liveTick() async {
+    final result = await ref.read(healthConnectSyncProvider).autoSync(
+        minInterval: HealthConnectSync.liveInterval,
+        window: HealthConnectSync.liveWindow);
+    if (!mounted) return;
+    // En el teléfono con el reloj solo se recarga si llegó algo; en los demás
+    // (familia) se consulta al servidor para ver los datos nuevos.
+    if (result != null && result.accepted == 0) return;
+    ref.invalidate(latestVitalsProvider);
+    ref.invalidate(selectedPatientDetailProvider);
+    ref.invalidate(todaySummaryProvider);
   }
 
   /// Al abrir la app o volver a ella, envía las lecturas nuevas del reloj
@@ -82,7 +109,8 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       // AGE-506: la cuidadora tiene el SOS en todas sus pestañas. Va a la
       // izquierda para no tapar los botones propios de cada pantalla
       // (p. ej. "Nueva tarea").
-      floatingActionButton: isCaregiver && hasPatient ? const SosButton() : null,
+      floatingActionButton:
+          isCaregiver && hasPatient ? const SosButton() : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: SafeArea(
         bottom: false,
@@ -115,16 +143,21 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
   static const _familyTabs = <_Tab>[
     _Tab('Inicio', Icons.home_outlined, Icons.home_rounded, FamilyHomeScreen()),
-    _Tab('Salud', Icons.favorite_outline, Icons.favorite_rounded, HealthScreen()),
-    _Tab('Medicinas', Icons.medication_outlined, Icons.medication_rounded, MedicationsScreen()),
+    _Tab('Salud', Icons.favorite_outline, Icons.favorite_rounded,
+        HealthScreen()),
+    _Tab('Medicinas', Icons.medication_outlined, Icons.medication_rounded,
+        MedicationsScreen()),
     _Tab('Chat', Icons.forum_outlined, Icons.forum_rounded, CommsScreen()),
     _Tab('Más', Icons.menu_rounded, Icons.menu_rounded, MoreScreen()),
   ];
 
   static const _caregiverTabs = <_Tab>[
-    _Tab('Hoy', Icons.today_outlined, Icons.today_rounded, CaregiverTodayScreen()),
-    _Tab('Tareas', Icons.checklist_outlined, Icons.checklist_rounded, CaregiverTasksScreen()),
-    _Tab('Bitácora', Icons.edit_note_outlined, Icons.edit_note_rounded, CaregiverLogScreen()),
+    _Tab('Hoy', Icons.today_outlined, Icons.today_rounded,
+        CaregiverTodayScreen()),
+    _Tab('Tareas', Icons.checklist_outlined, Icons.checklist_rounded,
+        CaregiverTasksScreen()),
+    _Tab('Bitácora', Icons.edit_note_outlined, Icons.edit_note_rounded,
+        CaregiverLogScreen()),
     _Tab('Chat', Icons.forum_outlined, Icons.forum_rounded, CommsScreen()),
     _Tab('Más', Icons.menu_rounded, Icons.menu_rounded, MoreScreen()),
   ];

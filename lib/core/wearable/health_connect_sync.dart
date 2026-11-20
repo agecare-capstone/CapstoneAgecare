@@ -29,11 +29,20 @@ class HealthConnectSync {
   final VitalsRepository _vitals;
   final Health _health = Health();
   bool _configured = false;
-  DateTime? _lastAutoSync;
+
+  /// Última sincronización por ventana: la completa (24 h) y la en vivo
+  /// (15 min) llevan su propio control, para que al volver de segundo plano
+  /// se lean igual las 24 h.
+  final Map<Duration, DateTime> _lastAutoSync = {};
 
   static const _storage = FlutterSecureStorage();
   static const _patientKey = 'health_connect_patient_id';
   static const _autoSyncMinInterval = Duration(minutes: 2);
+
+  /// Sincronización "en vivo" mientras la app está abierta: cada 10 s se
+  /// leen solo los últimos minutos, para que sea liviana.
+  static const liveInterval = Duration(seconds: 10);
+  static const liveWindow = Duration(minutes: 15);
 
   static const _types = [HealthDataType.HEART_RATE, HealthDataType.BLOOD_OXYGEN];
   static const _batchSize = 500; // máximo que acepta POST /vitals/batch
@@ -78,22 +87,30 @@ class HealthConnectSync {
   /// Solo corre si el usuario ya sincronizó una vez a mano en este equipo
   /// (paciente recordado y permiso concedido): nunca muestra diálogos.
   /// Devuelve null si no corresponde sincronizar.
-  Future<HealthSyncResult?> autoSync() async {
+  ///
+  /// [minInterval] y [window] permiten la sincronización en vivo (cada 10 s,
+  /// últimos 15 min); al abrir la app se usan 2 min y 24 h.
+  Future<HealthSyncResult?> autoSync({
+    Duration minInterval = _autoSyncMinInterval,
+    Duration window = const Duration(hours: 24),
+  }) async {
     if (!isSupported) return null;
     final now = DateTime.now();
-    if (_lastAutoSync != null && now.difference(_lastAutoSync!) < _autoSyncMinInterval) {
+    final last = _lastAutoSync[window];
+    if (last != null && now.difference(last) < minInterval) {
       return null;
     }
-    _lastAutoSync = now;
+    _lastAutoSync[window] = now;
     final patientId = await _storage.read(key: _patientKey);
     if (patientId == null || !await isAvailable()) return null;
     final access = List.filled(_types.length, HealthDataAccess.READ);
     if (!(await _health.hasPermissions(_types, permissions: access) ?? false)) return null;
-    return sync(patientId);
+    return sync(patientId, window: window);
   }
 
   /// Envía al paciente las lecturas de las últimas [window] horas.
-  Future<HealthSyncResult> sync(String patientId, {Duration window = const Duration(hours: 24)}) async {
+  Future<HealthSyncResult> sync(String patientId,
+      {Duration window = const Duration(hours: 24)}) async {
     await _configure();
     final now = DateTime.now();
     final points = await _health.getHealthDataFromTypes(
@@ -101,11 +118,8 @@ class HealthConnectSync {
       startTime: now.subtract(window),
       endTime: now,
     );
-    final readings = _health
-        .removeDuplicates(points)
-        .map(_toReading)
-        .whereType<VitalReading>()
-        .toList();
+    final readings =
+        _health.removeDuplicates(points).map(_toReading).whereType<VitalReading>().toList();
 
     var accepted = 0;
     for (var i = 0; i < readings.length; i += _batchSize) {
@@ -138,5 +152,5 @@ class HealthConnectSync {
   }
 }
 
-final healthConnectSyncProvider = Provider<HealthConnectSync>(
-    (ref) => HealthConnectSync(ref.watch(vitalsRepositoryProvider)));
+final healthConnectSyncProvider =
+    Provider<HealthConnectSync>((ref) => HealthConnectSync(ref.watch(vitalsRepositoryProvider)));

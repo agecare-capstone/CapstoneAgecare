@@ -8,22 +8,31 @@ import '../../../core/widgets/common.dart';
 import '../../patients/application/patients_providers.dart';
 import '../data/vitals_repository.dart';
 import '../domain/models.dart';
+import 'health_screen.dart' show latestVitalsProvider;
 
-/// Rango de días seleccionado en el detalle.
+/// Rango seleccionado en el detalle: 1 = hoy, o 7 / 30 / 90 días.
 final _rangeProvider = StateProvider<int>((ref) => 7);
 
+/// Agrupación según el rango: hoy cada lectura, 7 días por hora (se ve el uso
+/// real del reloj aunque sea de un solo día) y 30/90 días por día.
+String granularityFor(int days) => days <= 1 ? 'raw' : (days <= 7 ? 'hour' : 'day');
+
 final _seriesProvider =
-    FutureProvider.family<VitalSeries?, VitalType>((ref, type) async {
+    FutureProvider.autoDispose.family<VitalSeries?, VitalType>((ref, type) async {
   final patient = ref.watch(selectedPatientProvider);
   if (patient == null) return null;
+  // Cuando llegan lecturas nuevas del reloj (sincronización cada 10 s), se
+  // recarga también el gráfico.
+  ref.watch(latestVitalsProvider);
   final days = ref.watch(_rangeProvider);
-  final to = DateTime.now();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
   return ref.watch(vitalsRepositoryProvider).getSeries(
         patient.patientId,
         type,
-        from: to.subtract(Duration(days: days)),
-        to: to,
-        granularity: 'day',
+        from: days <= 1 ? today : now.subtract(Duration(days: days)),
+        to: now,
+        granularity: granularityFor(days),
       );
 });
 
@@ -38,6 +47,7 @@ class VitalDetailScreen extends ConsumerWidget {
     final type = VitalType.fromApi(typeApiValue);
     final range = ref.watch(_rangeProvider);
     final series = ref.watch(_seriesProvider(type));
+    final granularity = granularityFor(range);
 
     return Scaffold(
       appBar: AppBar(title: Text(type.label)),
@@ -48,6 +58,7 @@ class VitalDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: SegmentedButton<int>(
               segments: const [
+                ButtonSegment(value: 1, label: Text('Hoy')),
                 ButtonSegment(value: 7, label: Text('7 días')),
                 ButtonSegment(value: 30, label: Text('30 días')),
                 ButtonSegment(value: 90, label: Text('90 días')),
@@ -60,6 +71,8 @@ class VitalDetailScreen extends ConsumerWidget {
           ),
           Expanded(
             child: series.when(
+              // Al recargar por datos nuevos se mantiene el gráfico en pantalla.
+              skipLoadingOnReload: true,
               loading: () => const LoadingView(),
               error: (e, _) => ErrorView(
                   message: e.toString(),
@@ -72,11 +85,19 @@ class VitalDetailScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 8, 24, 24),
                       child: Column(
                         children: [
-                          Expanded(child: _TrendChart(series: data)),
+                          Text(
+                            _summary(data, granularity),
+                            key: const Key('series-summary'),
+                            style: const TextStyle(color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                              child: _TrendChart(series: data, granularity: granularity)),
                           if (data.points.any((p) => p.min != null && p.max != null))
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8),
-                              child: _MinMaxLegend(),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _MinMaxLegend(
+                                  period: granularity == 'hour' ? 'de cada hora' : 'del día'),
                             ),
                           if (data.threshold != null)
                             Padding(
@@ -107,6 +128,16 @@ class VitalDetailScreen extends ConsumerWidget {
     );
   }
 
+  /// "51 lecturas hoy" / "2 horas con datos" / "1 día con datos".
+  static String _summary(VitalSeries data, String granularity) {
+    final n = data.points.length;
+    return switch (granularity) {
+      'raw' => '$n ${n == 1 ? 'lectura' : 'lecturas'} hoy',
+      'hour' => '$n ${n == 1 ? 'hora' : 'horas'} con datos en los últimos 7 días',
+      _ => '$n ${n == 1 ? 'día' : 'días'} con datos',
+    };
+  }
+
   String _thresholdLabel(Threshold t, VitalType type) {
     final parts = <String>[];
     if (t.minValue != null) parts.add('mín ${t.minValue!.toStringAsFixed(0)}');
@@ -115,10 +146,12 @@ class VitalDetailScreen extends ConsumerWidget {
   }
 }
 
-/// Leyenda de las lineas punteadas de minimo/maximo diario del grafico
+/// Leyenda de las lineas punteadas de minimo/maximo del grafico
 /// (AGE-304 / AC: "...mostrando minimos y maximos").
 class _MinMaxLegend extends StatelessWidget {
-  const _MinMaxLegend();
+  const _MinMaxLegend({required this.period});
+
+  final String period;
 
   @override
   Widget build(BuildContext context) {
@@ -130,9 +163,11 @@ class _MinMaxLegend extends StatelessWidget {
           if (i < 2) const SizedBox(width: 3),
         ],
         const SizedBox(width: 6),
-        const Text(
-          'Líneas punteadas: mínimo y máximo del día',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        Flexible(
+          child: Text(
+            'Líneas punteadas: mínimo y máximo $period',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
         ),
       ],
     );
@@ -140,9 +175,29 @@ class _MinMaxLegend extends StatelessWidget {
 }
 
 class _TrendChart extends StatelessWidget {
-  const _TrendChart({required this.series});
+  const _TrendChart({required this.series, required this.granularity});
 
   final VitalSeries series;
+  final String granularity;
+
+  /// Etiquetas en hora local: hoy "19:45", 7 días "20/11 19h", 30/90 días "20/11".
+  String _label(DateTime ts) {
+    final local = ts.toLocal();
+    return switch (granularity) {
+      'raw' => DateFormat('HH:mm').format(local),
+      'hour' => '${DateFormat('d/M').format(local)} ${local.hour}h',
+      _ => DateFormat('d/M').format(local),
+    };
+  }
+
+  String _tooltipDate(DateTime ts) {
+    final local = ts.toLocal();
+    return switch (granularity) {
+      'raw' => DateFormat('HH:mm').format(local),
+      'hour' => DateFormat("d MMM, HH':00'", 'es').format(local),
+      _ => DateFormat('d MMM', 'es').format(local),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -175,6 +230,9 @@ class _TrendChart extends StatelessWidget {
 
     return LineChart(
       LineChartData(
+        // Con un solo punto (p. ej. un día con datos) queda centrado y visible.
+        minX: points.length == 1 ? -1 : 0,
+        maxX: points.length == 1 ? 1 : (points.length - 1).toDouble(),
         minY: minY - pad,
         maxY: maxY + pad,
         gridData: FlGridData(
@@ -196,10 +254,10 @@ class _TrendChart extends StatelessWidget {
               interval: (points.length / 4).ceilToDouble().clamp(1, 999),
               getTitlesWidget: (value, meta) {
                 final i = value.toInt();
-                if (i < 0 || i >= points.length) return const SizedBox.shrink();
+                if (value != i || i < 0 || i >= points.length) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text(DateFormat('d/M').format(points[i].ts),
+                  child: Text(_label(points[i].ts),
                       style: const TextStyle(
                           fontSize: 11, color: AppColors.textSecondary)),
                 );
@@ -260,7 +318,7 @@ class _TrendChart extends StatelessWidget {
           touchTooltipData: LineTouchTooltipData(
             getTooltipItems: (touched) => touched
                 .map((s) => LineTooltipItem(
-                      '${points[s.spotIndex].value} ${series.type.unit}\n${DateFormat('d MMM', 'es').format(points[s.spotIndex].ts)}',
+                      '${points[s.spotIndex].value.round()} ${series.type.unit}\n${_tooltipDate(points[s.spotIndex].ts)}',
                       const TextStyle(color: Colors.white, fontSize: 12),
                     ))
                 .toList(),

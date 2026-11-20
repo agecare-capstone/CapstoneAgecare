@@ -136,9 +136,11 @@ void main() {
       (tester) async {
     final repo = await pumpDetail(tester);
 
-    expect(repo.requestedDays, [7]); // rango por defecto
+    // Rango por defecto; se vuelve a pedir cuando llegan lecturas nuevas.
+    expect(repo.requestedDays.toSet(), {7});
+    // 7 días se agrupa por hora.
     expect(
-        find.text('Líneas punteadas: mínimo y máximo del día'), findsOneWidget);
+        find.text('Líneas punteadas: mínimo y máximo de cada hora'), findsOneWidget);
     expect(find.textContaining('Umbral de alerta'), findsOneWidget);
   });
 

@@ -160,6 +160,7 @@ class CaregiverToday {
     this.observationsCount = 0,
     this.alertsCount = 0,
     this.adherencePct,
+    this.currentShift,
   });
 
   final String patientId;
@@ -170,6 +171,16 @@ class CaregiverToday {
   final int observationsCount;
   final int alertsCount;
   final double? adherencePct;
+
+  /// Turno de 8 h en curso: "Turno tarde · 16:00 a 24:00" (mañana 08-16, tarde 16-24).
+  final String? currentShift;
+
+  static String? shiftLabel(Object? shift) {
+    if (shift is! Map) return null;
+    final name = (shift['name'] ?? '').toString().toLowerCase();
+    if (name.isEmpty) return null;
+    return 'Turno $name · ${shift['start']} a ${shift['end']}';
+  }
 
   factory CaregiverToday.fromJson(Map<String, dynamic> json) => CaregiverToday(
         patientId: (json['patient_id'] ?? '').toString(),
@@ -186,6 +197,7 @@ class CaregiverToday {
         adherencePct: json['adherence_pct'] != null
             ? (json['adherence_pct'] as num).toDouble()
             : null,
+        currentShift: shiftLabel(json['current_shift']),
       );
 }
 

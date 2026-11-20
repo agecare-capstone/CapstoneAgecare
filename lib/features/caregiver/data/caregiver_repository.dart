@@ -343,6 +343,10 @@ class CaregiverRepositoryMock implements CaregiverRepository {
       observationsCount: _observations.length,
       alertsCount: 0,
       adherencePct: 92,
+      // Turnos de 8 h: mañana 08-16 y tarde 16-24.
+      currentShift: DateTime.now().hour < 16
+          ? 'Turno mañana · 08:00 a 16:00'
+          : 'Turno tarde · 16:00 a 24:00',
     );
   }
 

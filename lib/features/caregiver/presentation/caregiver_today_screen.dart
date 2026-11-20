@@ -101,6 +101,12 @@ class _ShiftCard extends StatelessWidget {
                   style: const TextStyle(color: AppColors.textSecondary)),
             ],
           ),
+          if (today.currentShift != null) ...[
+            const SizedBox(height: 6),
+            Text(today.currentShift!,
+                key: const Key('current-shift'),
+                style: const TextStyle(color: AppColors.textSecondary)),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             height: 60,

@@ -23,9 +23,11 @@ class MedicationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final patient = ref.watch(selectedPatientProvider);
     final meds = ref.watch(medicationsProvider);
-    // AGE-404: familiar y adulto mayor tienen solo lectura en medicamentos.
+    // Familiar, cuidadora y médico programan remedios; el adulto mayor solo los ve.
     final role = ref.watch(currentUserProvider)?.primaryRole;
-    final canEdit = role == RoleType.caregiver || role == RoleType.doctor;
+    final canEdit = role == RoleType.caregiver ||
+        role == RoleType.doctor ||
+        role == RoleType.family;
 
     return Scaffold(
       appBar: AppBar(

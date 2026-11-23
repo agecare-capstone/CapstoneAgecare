@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La compilación release borra los recursos que no ve referenciados desde Android.
+     El ícono de notificación se nombra desde Dart (flutter_local_notifications), así
+     que se marca para conservarlo. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />

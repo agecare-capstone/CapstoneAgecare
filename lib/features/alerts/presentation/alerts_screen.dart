@@ -38,7 +38,10 @@ class AlertsScreen extends ConsumerWidget {
               onRetry: () => ref.invalidate(activeAlertsProvider),
             ),
             data: (alerts) {
-              final active = alerts.where((a) => a.isActive).toList();
+              // Pendientes: activas y las ya vistas (reconocidas) que falta
+              // resolver; antes las vistas no aparecían en ninguna pestaña.
+              final active = alerts.where((a) => !a.isResolved).toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
               final history = alerts.where((a) => a.isResolved).toList()
                 ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
               return TabBarView(
@@ -174,7 +177,7 @@ class _AlertCardState extends ConsumerState<_AlertCard> {
     setState(() => _busy = true);
     try {
       await action();
-      ref.invalidate(activeAlertsProvider);
+      refreshAlertsFromWidget(ref);
       if (mounted) showAppSnackBar(context, okMessage);
     } on ApiException catch (e) {
       if (mounted) showAppSnackBar(context, e.message, error: true);
@@ -249,6 +252,19 @@ class _AlertCardState extends ConsumerState<_AlertCard> {
               ],
             ),
           ],
+          // Ya resuelta (Historial): sin botones, que solo devolvían "ya fue resuelta".
+          if (a.isResolved) ...[
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.task_alt_rounded,
+                    size: 16, color: AppColors.statusOk),
+                SizedBox(width: 4),
+                Text('Resuelta',
+                    style: TextStyle(color: AppColors.statusOk, fontSize: 12)),
+              ],
+            ),
+          ] else ...[
           const SizedBox(height: 12),
           Row(
             children: [
@@ -290,6 +306,7 @@ class _AlertCardState extends ConsumerState<_AlertCard> {
               ),
             ],
           ),
+          ],
         ],
       ),
     );

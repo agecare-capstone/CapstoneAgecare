@@ -30,16 +30,31 @@ class AlertsRepositoryHttp implements AlertsRepository {
   @override
   Future<List<Alert>> listAlerts(
       {String? patientId, bool activeOnly = false}) async {
-    final data = await _api.get<Map<String, dynamic>>(
-      '/users/me/alerts',
-      query: {
-        'status': activeOnly ? 'active' : 'all',
-        if (patientId != null) 'patient_id': patientId,
-      },
-    );
-    return ((data['items'] ?? data['alerts'] ?? []) as List)
-        .map((e) => Alert.fromJson(e as Map<String, dynamic>))
-        .toList();
+    // El servidor pagina de a 20 por defecto: con "all" solo llegaban las 20 más
+    // recientes mezcladas con las resueltas y las demás pendientes no se veían.
+    // Se piden por estado: todas las pendientes (hasta 100 por estado) y las
+    // últimas 50 resueltas para el historial.
+    Future<List<Alert>> fetch(String status, int pageSize) async {
+      final data = await _api.get<Map<String, dynamic>>(
+        '/users/me/alerts',
+        query: {
+          'status': status,
+          'page_size': pageSize,
+          if (patientId != null) 'patient_id': patientId,
+        },
+      );
+      return ((data['items'] ?? data['alerts'] ?? []) as List)
+          .map((e) => Alert.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+
+    if (activeOnly) return fetch('active', 100);
+    final parts = await Future.wait([
+      fetch('active', 100),
+      fetch('acknowledged', 100),
+      fetch('resolved', 50),
+    ]);
+    return [for (final p in parts) ...p];
   }
 
   @override

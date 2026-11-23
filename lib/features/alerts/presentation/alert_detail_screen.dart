@@ -118,7 +118,7 @@ class _AlertDetailScreenState extends ConsumerState<AlertDetailScreen> {
     setState(() => _busy = true);
     try {
       await action();
-      ref.invalidate(activeAlertsProvider);
+      refreshAlertsFromWidget(ref);
       ref.invalidate(_alertByIdProvider(widget.alertId));
       if (!mounted) return;
       showAppSnackBar(context, okMessage);

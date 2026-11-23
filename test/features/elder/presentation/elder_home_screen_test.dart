@@ -4,6 +4,7 @@ import 'package:agecare_app/core/speech/speech_service.dart';
 import 'package:agecare_app/core/theme/app_theme.dart';
 import 'package:agecare_app/core/widgets/medical_disclaimer.dart';
 import 'package:agecare_app/features/elder/application/elder_providers.dart';
+import 'package:agecare_app/features/elder/domain/models.dart';
 import 'package:agecare_app/features/elder/presentation/elder_home_screen.dart';
 import 'package:agecare_app/features/elder/presentation/elder_medicines_screen.dart';
 import 'package:agecare_app/features/medications/presentation/medication_plan_screen.dart';
@@ -100,6 +101,28 @@ void main() {
     await tester.tap(find.text('Atorvastatina').first);
     expect(
         speech.spoken.single, startsWith('A las 22:00, Atorvastatina, 20 mg.'));
+  });
+
+  testWidgets('"¿Cómo te sientes hoy?": al tocar "Mal" se avisa a la familia',
+      (tester) async {
+    final speech = await pump(tester, const ElderHomeScreen());
+
+    expect(find.text('¿Cómo te sientes hoy?'), findsOneWidget);
+    expect(find.byKey(const Key('feeling-confirmation')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('feeling-bad')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+    expect(find.text('Le avisamos a tu familia que hoy te sientes mal.'),
+        findsOneWidget);
+    expect(speech.spoken,
+        contains('Le avisamos a tu familia que hoy te sientes mal.'));
+  });
+
+  test('el check-in del día se reconoce por el texto de la bitácora', () {
+    expect(Feeling.fromCheckinText('Me siento mal hoy.'), Feeling.bad);
+    expect(Feeling.fromCheckinText('Me siento bien hoy.'), Feeling.good);
+    expect(Feeling.fromCheckinText('Durmió poco'), isNull);
   });
 
   test('el aviso legal aclara que no reemplaza a un profesional de la salud',

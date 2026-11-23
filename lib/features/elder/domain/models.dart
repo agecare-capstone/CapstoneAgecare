@@ -102,6 +102,29 @@ class ContentItem {
       );
 }
 
+/// Cómo se siente hoy el adulto mayor (check-in diario, POST /checkin).
+/// La familia recibe el aviso y lo ve en el semáforo de bienestar.
+enum Feeling {
+  good('good', 'Bien', 'Me siento bien hoy.'),
+  regular('regular', 'Regular', 'Me siento regular hoy.'),
+  bad('bad', 'Mal', 'Me siento mal hoy.');
+
+  const Feeling(this.apiValue, this.label, this.checkinText);
+
+  final String apiValue;
+  final String label;
+
+  /// Texto con que el servidor guarda el check-in en la bitácora.
+  final String checkinText;
+
+  static Feeling? fromCheckinText(String text) {
+    for (final f in Feeling.values) {
+      if (f.checkinText == text.trim()) return f;
+    }
+    return null;
+  }
+}
+
 /// Tarea de la agenda del adulto mayor: una comida, una cita médica, etc.
 /// Viene de GET /patients/{id}/daily-tasks.
 class AgendaTask {

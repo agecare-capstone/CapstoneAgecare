@@ -306,12 +306,10 @@ class _TaskTileState extends ConsumerState<_TaskTile> {
   bool _busy = false;
 
   Future<void> _advance() async {
-    // Ciclo pendiente -> en curso -> completada.
-    final next = switch (widget.task.status) {
-      TaskStatus.pending => TaskStatus.inProgress,
-      TaskStatus.inProgress => TaskStatus.done,
-      TaskStatus.done => TaskStatus.pending,
-    };
+    // Un toque la marca como completada; otro la vuelve a pendiente.
+    final next = widget.task.status == TaskStatus.done
+        ? TaskStatus.pending
+        : TaskStatus.done;
     setState(() => _busy = true);
     try {
       await ref
@@ -342,9 +340,7 @@ class _TaskTileState extends ConsumerState<_TaskTile> {
               : Icon(
                   task.status == TaskStatus.done
                       ? Icons.check_circle_rounded
-                      : task.status == TaskStatus.inProgress
-                          ? Icons.timelapse_rounded
-                          : Icons.radio_button_unchecked_rounded,
+                      : Icons.radio_button_unchecked_rounded,
                   color: task.status.color,
                 ),
           const SizedBox(width: 12),

@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../caregiver/application/caregiver_providers.dart';
+import '../../home/application/home_providers.dart';
+import '../../patients/application/patients_providers.dart';
 import '../data/alerts_repository.dart';
 import '../domain/models.dart';
 
@@ -18,11 +21,25 @@ final alertsCountProvider = Provider.autoDispose<int>((ref) {
   );
 });
 
-/// Refresca las listas de alertas tras una acción (acknowledge/resolve/SOS).
-void refreshAlerts(Ref ref) => ref.invalidate(activeAlertsProvider);
+/// Refresca las alertas tras una acción (acknowledge/resolve/SOS) y los contadores
+/// que las incluyen: "Hoy" de la cuidadora y el resumen y semáforo del paciente.
+/// Sin esto, "Hoy" seguía mostrando las mismas alertas después de resolverlas.
+void refreshAlerts(Ref ref) {
+  ref.invalidate(activeAlertsProvider);
+  ref.invalidate(caregiverTodayProvider);
+  ref.invalidate(selectedPatientDetailProvider);
+  ref.invalidate(todaySummaryProvider);
+  ref.invalidate(wellbeingProvider);
+}
 
 /// Variante para usar desde widgets con [WidgetRef].
-void refreshAlertsFromWidget(WidgetRef ref) => ref.invalidate(activeAlertsProvider);
+void refreshAlertsFromWidget(WidgetRef ref) {
+  ref.invalidate(activeAlertsProvider);
+  ref.invalidate(caregiverTodayProvider);
+  ref.invalidate(selectedPatientDetailProvider);
+  ref.invalidate(todaySummaryProvider);
+  ref.invalidate(wellbeingProvider);
+}
 
 /// Hora relativa en español ("hace 5 min", "hace 2 h", "hace 3 días").
 String alertTimeAgo(DateTime when) {

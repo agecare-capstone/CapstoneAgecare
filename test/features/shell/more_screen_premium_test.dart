@@ -45,6 +45,17 @@ void main() {
     expect(find.text('Mis reportes'), findsOneWidget);
   });
 
+  testWidgets('la cuidadora entra a Medicamentos desde "Más"', (tester) async {
+    await pump(tester, RoleType.caregiver);
+    expect(find.text('Medicamentos'), findsOneWidget);
+  });
+
+  testWidgets('el familiar no lo ve en "Más" (ya tiene la pestaña Medicinas)',
+      (tester) async {
+    await pump(tester, RoleType.family);
+    expect(find.text('Medicamentos'), findsNothing);
+  });
+
   testWidgets('el médico no ve la oferta Premium', (tester) async {
     await pump(tester, RoleType.doctor);
     expect(find.text('AgeCare Premium'), findsNothing);

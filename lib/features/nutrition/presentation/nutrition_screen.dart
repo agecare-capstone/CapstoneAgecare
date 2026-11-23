@@ -26,8 +26,8 @@ String _ago(DateTime when) {
 String _glasses(double value) =>
     value == value.roundToDouble() ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
 
-/// Alimentación e hidratación (DAC05-95): la cuidadora registra cada comida
-/// con botones grandes y suma vasos de agua; la familia ve el resumen.
+/// Alimentación e hidratación (DAC05-95): la cuidadora y la familia registran
+/// cada comida con botones grandes y suman vasos de agua; el resto ve el resumen.
 class NutritionScreen extends ConsumerWidget {
   const NutritionScreen({super.key, required this.patientId});
 
@@ -37,7 +37,8 @@ class NutritionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final day = ref.watch(nutritionDayProvider(patientId));
     final role = ref.watch(currentUserProvider)?.primaryRole;
-    final canLog = role == RoleType.caregiver;
+    // La cuidadora y la familia registran lo que comió y tomó; el resto solo mira.
+    final canLog = role == RoleType.caregiver || role == RoleType.family;
     final canConfigure = role == RoleType.caregiver || role == RoleType.family;
 
     return Scaffold(

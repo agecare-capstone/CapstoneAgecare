@@ -1,5 +1,5 @@
-// Alimentación e hidratación (DAC05-95): la cuidadora registra comidas con
-// botones grandes y vasos de agua; la familia ve el resumen sin editar.
+// Alimentación e hidratación (DAC05-95): la cuidadora y la familia registran
+// comidas con botones grandes y vasos de agua; el resto ve el resumen.
 import 'package:agecare_app/core/theme/app_theme.dart';
 import 'package:agecare_app/features/auth/application/auth_controller.dart';
 import 'package:agecare_app/features/auth/domain/models.dart';
@@ -61,16 +61,31 @@ void main() {
     expect(find.text('750 ml de 1500 ml'), findsOneWidget);
   });
 
-  testWidgets('la familia ve el resumen pero no registra', (tester) async {
+  testWidgets('la familia también registra comidas y vasos de agua', (tester) async {
     await pump(tester, RoleType.family);
     expect(find.text('Todo'), findsOneWidget); // desayuno
     expect(find.text('Casi todo'), findsOneWidget); // almuerzo
-    expect(find.byKey(const Key('add-glass')), findsNothing);
     await tester.tap(find.byKey(const Key('meal-dinner')));
     await tester.pumpAndSettle();
-    expect(find.text('¿Cuánto comió en la cena?'), findsNothing);
+    expect(find.text('¿Cuánto comió en la cena?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('portion-50')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    expect(find.text('Cena: la mitad. Registrado.'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('add-glass')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    expect(find.text('3 de 6 vasos'), findsOneWidget);
     // Puede ajustar el aviso de "sin ingesta".
     expect(find.text('Si pasan 4 horas sin registros (de 8:00 a 21:00)'), findsOneWidget);
+  });
+
+  testWidgets('el adulto mayor y el médico solo ven el resumen', (tester) async {
+    for (final role in [RoleType.elder, RoleType.doctor]) {
+      await pump(tester, role);
+      expect(find.byKey(const Key('add-glass')), findsNothing);
+      await tester.tap(find.byKey(const Key('meal-dinner')));
+      await tester.pumpAndSettle();
+      expect(find.text('¿Cuánto comió en la cena?'), findsNothing);
+    }
   });
 
   testWidgets('la tarjeta del inicio resume comidas y vasos', (tester) async {

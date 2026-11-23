@@ -50,8 +50,10 @@ class PushService {
     // la versión web funciona sin alarmas ni push.
     if (kIsWeb) return;
 
+    // Ícono monocromo propio: '@mipmap/ic_launcher' no existe en la APK release
+    // (se elimina al compilar) y Android descartaba cada notificación.
     const androidInit =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_notification');
     const iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,

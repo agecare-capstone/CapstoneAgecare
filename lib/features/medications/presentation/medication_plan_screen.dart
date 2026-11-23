@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/notifications/push_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/medical_disclaimer.dart';
@@ -191,13 +190,12 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
     setState(() => _saving = true);
     final repo = ref.read(medicationsRepositoryProvider);
     try {
-      final med = _isEdit
+      // El aviso a la hora de cada toma lo envía el servidor (push al adulto
+      // mayor y a la cuidadora), así llega aunque esta app esté cerrada.
+      _isEdit
           ? await repo.updateMedication(
               widget.patientId, widget.medicationId!, data)
           : await repo.createMedication(widget.patientId, data);
-
-      // Tras generar dosis, programa recordatorios locales de las próximas.
-      await _scheduleReminders(med);
 
       ref.invalidate(medicationsProvider);
       ref.invalidate(todayDosesProvider);
@@ -213,29 +211,6 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
       if (mounted) showAppSnackBar(context, e.toString(), error: true);
     } finally {
       if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  /// Programa recordatorios locales para las próximas dosis generadas.
-  Future<void> _scheduleReminders(Medication med) async {
-    try {
-      final doses = await ref
-          .read(medicationsRepositoryProvider)
-          .listDoses(widget.patientId, date: DateTime.now());
-      final now = DateTime.now();
-      for (final d in doses) {
-        if (d.medicationId != med.id) continue;
-        if (d.status != DoseStatus.pending) continue;
-        if (d.scheduledAt.isBefore(now)) continue;
-        await PushService.instance.scheduleDoseReminder(
-          id: d.id.hashCode & 0x7fffffff,
-          medicationName: med.name,
-          when: d.scheduledAt,
-          doseId: d.id,
-        );
-      }
-    } catch (_) {
-      // Los recordatorios son best-effort; no bloquean el guardado.
     }
   }
 

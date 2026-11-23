@@ -17,6 +17,12 @@ abstract class ElderRepository {
   /// Tareas de la agenda desde hoy durante [days] días (comidas, citas...).
   Future<List<AgendaTask>> agenda(String patientId,
       {int days = 1, String? category});
+
+  /// Cómo dijo sentirse hoy; null si aún no responde.
+  Future<Feeling?> todayFeeling(String patientId);
+
+  /// Registra cómo se siente hoy (se puede cambiar durante el día).
+  Future<void> sendFeeling(String patientId, Feeling feeling);
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +85,32 @@ class ElderRepositoryHttp implements ElderRepository {
         .map((e) => AgendaTask.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  @override
+  Future<Feeling?> todayFeeling(String patientId) async {
+    // El check-in del día aparece en la bitácora como categoría "mood".
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final data = await _api.get<Map<String, dynamic>>(
+      '/patients/$patientId/observations',
+      query: {
+        'category': 'mood',
+        'date_from': today.toIso8601String(),
+        'page_size': 20,
+      },
+    );
+    for (final e in (data['items'] ?? []) as List) {
+      final feeling = Feeling.fromCheckinText(
+          ((e as Map<String, dynamic>)['text'] ?? '') as String);
+      if (feeling != null) return feeling;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> sendFeeling(String patientId, Feeling feeling) =>
+      _api.post<void>('/patients/$patientId/checkin',
+          data: {'feeling': feeling.apiValue});
 }
 
 // ---------------------------------------------------------------------------
@@ -90,6 +122,7 @@ class ElderRepositoryMock implements ElderRepository {
   }
 
   final List<FamilyPhoto> _photos = [];
+  Feeling? _feeling;
 
   void _seed() {
     final now = DateTime.now();
@@ -215,6 +248,15 @@ class ElderRepositoryMock implements ElderRepository {
         .where((t) => !t.date.isAfter(last))
         .where((t) => category == null || t.category == category)
         .toList();
+  }
+
+  @override
+  Future<Feeling?> todayFeeling(String patientId) async => _feeling;
+
+  @override
+  Future<void> sendFeeling(String patientId, Feeling feeling) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    _feeling = feeling;
   }
 }
 

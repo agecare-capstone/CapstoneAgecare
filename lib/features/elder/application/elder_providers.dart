@@ -39,6 +39,13 @@ final elderDosesProvider =
       .listDoses(patientId, days: days);
 });
 
+/// Cómo dijo sentirse hoy el adulto mayor (null si aún no responde).
+final elderFeelingProvider = FutureProvider.autoDispose<Feeling?>((ref) async {
+  final patientId = ref.watch(elderPatientIdProvider);
+  if (patientId == null) return null;
+  return ref.watch(elderRepositoryProvider).todayFeeling(patientId);
+});
+
 /// Comidas de hoy del adulto mayor.
 final elderMealsProvider =
     FutureProvider.autoDispose<List<AgendaTask>>((ref) async {

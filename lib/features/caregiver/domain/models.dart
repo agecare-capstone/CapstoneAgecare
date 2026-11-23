@@ -8,8 +8,8 @@ import '../../../core/theme/app_theme.dart';
 
 /// Estado de una tarea de cuidado (alineado con la API).
 enum TaskStatus {
+  // El servidor solo acepta pendiente/completada/omitida: no hay "En curso".
   pending('pending', 'Pendiente', AppColors.textSecondary),
-  inProgress('in_progress', 'En curso', AppColors.statusWarning),
   done('done', 'Completada', AppColors.statusOk);
 
   const TaskStatus(this.apiValue, this.label, this.color);

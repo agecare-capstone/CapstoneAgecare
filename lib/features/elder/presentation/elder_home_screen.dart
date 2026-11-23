@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/accessibility/accessibility_settings.dart';
 import '../../../core/speech/speech_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/common.dart';
 import '../../../core/widgets/medical_disclaimer.dart';
+import '../data/elder_repository.dart';
 import '../../alerts/presentation/sos_button.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../medications/domain/models.dart';
@@ -78,6 +80,7 @@ class ElderHomeScreen extends ConsumerWidget {
             ref.invalidate(elderDosesProvider(1));
             ref.invalidate(elderMealsProvider);
             ref.invalidate(elderAppointmentsProvider);
+            ref.invalidate(elderFeelingProvider);
           },
           child: ListView(
             // Espacio abajo para que el botón SOS no tape el contenido.
@@ -115,7 +118,8 @@ class ElderHomeScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   _HelpButton(
                     onTap: () => speech.speak(
-                      'Esta es tu pantalla de inicio. Arriba ves tu día: tu '
+                      'Esta es tu pantalla de inicio. Primero puedes contarnos '
+                      'cómo te sientes hoy; tu familia recibe el aviso. Luego ves tu día: tu '
                       'próximo remedio, tus comidas y tu próxima cita. Abajo '
                       'hay botones para llamar a tu familia, ver tus fotos, '
                       'escuchar contenido para ti o revisar tus remedios. El '
@@ -126,6 +130,8 @@ class ElderHomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               if (patientId != null) ...[
+                _FeelingCard(patientId: patientId, speech: speech),
+                const SizedBox(height: 20),
                 _TodayAgenda(speech: speech),
                 const SizedBox(height: 20),
               ],
@@ -326,6 +332,155 @@ class _HelpButton extends StatelessWidget {
             padding: EdgeInsets.all(14),
             child: Icon(Icons.volume_up_rounded,
                 size: 36, color: AppColors.primaryDark),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "¿Cómo te sientes hoy?": check-in diario del adulto mayor. Al elegir, la
+/// familia recibe un aviso y lo ve en el semáforo de bienestar.
+class _FeelingCard extends ConsumerStatefulWidget {
+  const _FeelingCard({required this.patientId, required this.speech});
+
+  final String patientId;
+  final SpeechService speech;
+
+  @override
+  ConsumerState<_FeelingCard> createState() => _FeelingCardState();
+}
+
+class _FeelingCardState extends ConsumerState<_FeelingCard> {
+  Feeling? _sending;
+
+  static const _colors = {
+    Feeling.good: Color(0xFF1F7A44),
+    Feeling.regular: Color(0xFF8A5C10),
+    Feeling.bad: Color(0xFFB3261E),
+  };
+  static const _icons = {
+    Feeling.good: Icons.sentiment_satisfied_alt_rounded,
+    Feeling.regular: Icons.sentiment_neutral_rounded,
+    Feeling.bad: Icons.sentiment_very_dissatisfied_rounded,
+  };
+
+  static String confirmation(Feeling f) => switch (f) {
+        Feeling.good => 'Qué bueno. Le contamos a tu familia que hoy te sientes bien.',
+        Feeling.regular => 'Le avisamos a tu familia que hoy te sientes regular.',
+        Feeling.bad => 'Le avisamos a tu familia que hoy te sientes mal.',
+      };
+
+  Future<void> _send(Feeling feeling) async {
+    setState(() => _sending = feeling);
+    try {
+      await ref.read(elderRepositoryProvider).sendFeeling(widget.patientId, feeling);
+      ref.invalidate(elderFeelingProvider);
+      widget.speech.speak(confirmation(feeling));
+    } catch (_) {
+      if (mounted) {
+        showAppSnackBar(context, 'No se pudo enviar. Intenta de nuevo.', error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _sending = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = ref.watch(elderFeelingProvider).valueOrNull;
+    return Column(
+      key: const Key('elder-feeling'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('¿Cómo te sientes hoy?',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (final f in Feeling.values) ...[
+              if (f != Feeling.values.first) const SizedBox(width: 10),
+              Expanded(
+                child: _FeelingButton(
+                  key: Key('feeling-${f.apiValue}'),
+                  label: f.label,
+                  icon: _icons[f]!,
+                  color: _colors[f]!,
+                  selected: current == f,
+                  busy: _sending == f,
+                  onTap: _sending == null ? () => _send(f) : null,
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (current != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            confirmation(current),
+            key: const Key('feeling-confirmation'),
+            style: const TextStyle(fontSize: 20, color: AppColors.textSecondary, height: 1.25),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _FeelingButton extends StatelessWidget {
+  const _FeelingButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final bool busy;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? Colors.white : color;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Me siento $label',
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? color : AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: color, width: selected ? 2.5 : 1.5),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+            child: Column(
+              children: [
+                busy
+                    ? SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(strokeWidth: 3, color: fg),
+                      )
+                    : Icon(icon, size: 40, color: fg),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(label,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: fg)),
+                ),
+              ],
+            ),
           ),
         ),
       ),

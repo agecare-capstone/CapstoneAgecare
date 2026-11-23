@@ -23,6 +23,7 @@ import '../../features/marketplace/presentation/caregiver_profile_screen.dart';
 import '../../features/marketplace/presentation/marketplace_screen.dart';
 import '../../features/medications/presentation/dose_confirm_screen.dart';
 import '../../features/medications/presentation/medication_plan_screen.dart';
+import '../../features/medications/presentation/medications_screen.dart';
 import '../../features/medications/presentation/prescription_scan_screen.dart';
 import '../../features/patients/presentation/accept_invitation_screen.dart';
 import '../../features/patients/presentation/create_patient_screen.dart';
@@ -101,6 +102,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           builder: (_, __) => const AcceptInvitationScreen()),
 
       // --- Medicamentos ---
+      // Pantalla completa de medicamentos del paciente seleccionado. La familia
+      // la tiene como pestaña; la cuidadora entra desde "Más".
+      GoRoute(path: '/meds', builder: (_, __) => const MedicationsScreen()),
       GoRoute(
         path: '/meds/plan',
         builder: (_, st) => MedicationPlanScreen(

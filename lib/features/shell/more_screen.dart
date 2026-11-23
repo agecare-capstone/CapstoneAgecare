@@ -37,6 +37,9 @@ class MoreScreen extends ConsumerWidget {
         _MoreItem(Icons.workspace_premium_outlined, 'AgeCare Premium',
             () => context.push('/premium')),
       if (role == RoleType.caregiver) ...[
+        // La cuidadora agrega remedios y sus horarios igual que la familia.
+        _MoreItem(Icons.medication_outlined, 'Medicamentos',
+            () => context.push('/meds')),
         _MoreItem(Icons.insights_outlined, 'Mis reportes',
             () => context.push('/cg/reports')),
       ],

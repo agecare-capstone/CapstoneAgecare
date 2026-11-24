@@ -29,9 +29,10 @@ class MoreScreen extends ConsumerWidget {
       if (role == RoleType.family)
         _MoreItem(Icons.group_add_outlined, 'Invitar al círculo de cuidado',
             () => context.push('/invite')),
-      if (role != RoleType.family)
-        _MoreItem(Icons.pin_outlined, 'Unirme con un código',
-            () => context.push('/invite/accept')),
+      // Cualquiera puede unirse a otro círculo con un código (también un
+      // segundo familiar o una cuenta nueva que aún no tiene pacientes).
+      _MoreItem(Icons.pin_outlined, 'Unirme con un código',
+          () => context.push('/invite/accept')),
       // Premium para la familia y la cuidadora (DAC05-33).
       if (role == RoleType.family || role == RoleType.caregiver)
         _MoreItem(Icons.workspace_premium_outlined, 'AgeCare Premium',

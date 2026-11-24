@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../caregiver/application/caregiver_providers.dart';
+import '../application/patients_providers.dart';
 import '../data/patients_repository.dart';
 import '../domain/models.dart';
 
@@ -44,7 +47,12 @@ class _AcceptInvitationScreenState extends ConsumerState<AcceptInvitationScreen>
     try {
       final card =
           await ref.read(patientsRepositoryProvider).acceptInvitation(code);
-      setState(() => _joined = card);
+      // Recarga el perfil (rol y pacientes) para que "Ir a Inicio" abra la
+      // vista de su rol: cuidadora, adulto mayor, médico o familiar.
+      await ref.read(authControllerProvider.notifier).refreshProfile();
+      ref.invalidate(myPatientsProvider);
+      ref.invalidate(caregiverTodayProvider);
+      if (mounted) setState(() => _joined = card);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } finally {

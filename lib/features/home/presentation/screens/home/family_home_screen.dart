@@ -42,12 +42,26 @@ class FamilyHomeScreen extends ConsumerWidget {
               return EmptyView(
                 icon: Icons.people_alt_outlined,
                 title: 'Aún no tienes pacientes',
-                subtitle:
-                    'Crea el perfil de tu familiar para empezar a cuidar de su bienestar.',
-                action: FilledButton.icon(
-                  onPressed: () => context.push('/patients/create'),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Crear paciente'),
+                subtitle: 'Si eres familiar, crea el perfil de quien vas a cuidar. '
+                    'Si te invitaron como cuidadora, adulto mayor o médico, '
+                    'ingresa el código que te dio la familia.',
+                action: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => context.push('/patients/create'),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Crear paciente'),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      key: const Key('join-with-code'),
+                      onPressed: () => context.push('/invite/accept'),
+                      icon: const Icon(Icons.pin_outlined),
+                      label: const Text('Tengo un código'),
+                    ),
+                  ],
                 ),
               );
             }

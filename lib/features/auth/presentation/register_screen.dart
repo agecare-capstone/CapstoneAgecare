@@ -24,6 +24,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
+  final _code = TextEditingController();
   bool _loading = false;
 
   Future<void> _submit() async {
@@ -35,7 +36,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             email: _email.text.trim(),
             password: _password.text,
             phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
-            invitationToken: widget.invitationToken,
+            // Enlace de invitación o código de 6 dígitos: la cuenta queda
+            // vinculada al paciente con el rol de la invitación.
+            invitationToken: widget.invitationToken ??
+                (_code.text.trim().isEmpty ? null : _code.text.trim()),
           );
       if (!mounted) return;
       final email = _email.text.trim();
@@ -124,6 +128,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
+                if (widget.invitationToken == null) ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    key: const Key('register-code'),
+                    controller: _code,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    decoration: const InputDecoration(
+                      labelText: 'Código de invitación (opcional)',
+                      helperText:
+                          'Si te invitaron como cuidadora, adulto mayor o médico, '
+                          'escribe el código de 6 dígitos que te dio la familia.',
+                      helperMaxLines: 3,
+                      prefixIcon: Icon(Icons.pin_outlined),
+                      counterText: '',
+                    ),
+                    validator: (v) {
+                      final code = (v ?? '').trim();
+                      if (code.isEmpty) return null;
+                      return RegExp(r'^\d{6}$').hasMatch(code)
+                          ? null
+                          : 'El código tiene 6 dígitos';
+                    },
+                  ),
+                ],
                 const SizedBox(height: 28),
                 FilledButton(
                   onPressed: _loading ? null : _submit,

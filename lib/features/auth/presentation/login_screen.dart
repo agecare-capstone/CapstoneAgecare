@@ -40,6 +40,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _openRegister() async {
+    final email = await context.push<String>('/register');
+    if (email == null || !mounted) return;
+    _email.text = email;
+    _password.clear();
+    showAppSnackBar(context, 'Cuenta creada. Ahora inicia sesión con tu contraseña.');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,7 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const Text('¿No tienes cuenta?',
                           style: TextStyle(color: AppColors.textSecondary)),
                       TextButton(
-                        onPressed: () => context.push('/register'),
+                        onPressed: _openRegister,
                         child: const Text('Regístrate'),
                       ),
                     ],

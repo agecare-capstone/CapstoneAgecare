@@ -12,6 +12,7 @@ import 'package:agecare_app/features/auth/domain/models.dart';
 import 'package:agecare_app/features/patients/application/patients_providers.dart';
 import 'package:agecare_app/features/patients/data/patients_repository.dart';
 import 'package:agecare_app/features/patients/domain/models.dart';
+import 'package:agecare_app/features/auth/application/auth_controller.dart';
 import 'package:agecare_app/features/shell/patient_selector_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,7 +98,10 @@ class _Harness extends ConsumerWidget {
 void main() {
   Future<void> pumpHarness(WidgetTester tester, PatientsRepository repo) async {
     await tester.pumpWidget(ProviderScope(
-      overrides: [patientsRepositoryProvider.overrideWithValue(repo)],
+      overrides: [
+        patientsRepositoryProvider.overrideWithValue(repo),
+        sessionUserIdProvider.overrideWithValue('u-test'),
+      ],
       child: MaterialApp(theme: AppTheme.light(), home: const _Harness()),
     ));
     // Pumps explicitos en vez de un solo pumpAndSettle: el auto-select de

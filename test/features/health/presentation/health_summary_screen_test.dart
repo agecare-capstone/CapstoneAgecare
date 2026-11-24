@@ -5,6 +5,7 @@ import 'package:agecare_app/features/health/data/vitals_repository.dart';
 import 'package:agecare_app/features/health/domain/models.dart';
 import 'package:agecare_app/features/health/presentation/health_summary_screen.dart';
 import 'package:agecare_app/features/medications/data/medications_repository.dart';
+import 'package:agecare_app/features/auth/application/auth_controller.dart';
 import 'package:agecare_app/features/patients/data/patients_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         patientsRepositoryProvider.overrideWithValue(PatientsRepositoryMock()),
+        sessionUserIdProvider.overrideWithValue('u-test'),
         vitalsRepositoryProvider.overrideWithValue(vitals),
         medicationsRepositoryProvider
             .overrideWithValue(MedicationsRepositoryMock()),

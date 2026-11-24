@@ -11,6 +11,7 @@ import 'package:agecare_app/features/health/data/vitals_repository.dart';
 import 'package:agecare_app/features/health/domain/models.dart';
 import 'package:agecare_app/features/health/presentation/vital_detail_screen.dart';
 import 'package:agecare_app/features/patients/data/patients_repository.dart';
+import 'package:agecare_app/features/auth/application/auth_controller.dart';
 import 'package:agecare_app/features/patients/domain/models.dart';
 import 'package:flutter/material.dart' hide Threshold;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -120,6 +121,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         patientsRepositoryProvider.overrideWithValue(_SinglePatientRepo()),
+        sessionUserIdProvider.overrideWithValue('u-test'),
         vitalsRepositoryProvider.overrideWithValue(repo),
       ],
       child: MaterialApp(

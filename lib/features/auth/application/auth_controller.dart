@@ -61,20 +61,15 @@ class AuthController extends Notifier<AuthState> {
     String? phone,
     String? invitationToken,
   }) async {
-    final session = await _repo.register(
+    // Solo crea la cuenta (y acepta la invitación, si viene): no abre sesión.
+    // La persona vuelve al login e entra con su correo y contraseña.
+    await _repo.register(
       fullName: fullName,
       email: email,
       password: password,
       phone: phone,
       invitationToken: invitationToken,
     );
-    await ref
-        .read(tokenStorageProvider)
-        .save(access: session.accessToken, refresh: session.refreshToken);
-    // Tras registro con invitación las membresías llegan en /users/me.
-    final user =
-        invitationToken != null ? await _repo.me() : session.user;
-    state = Authenticated(user);
   }
 
   Future<void> recoverPassword(String email) => _repo.requestPasswordRecovery(email);
@@ -110,3 +105,9 @@ final currentUserProvider = Provider<User?>((ref) {
   final state = ref.watch(authControllerProvider);
   return state is Authenticated ? state.user : null;
 });
+
+/// Id del usuario con sesión. Los datos que se guardan en memoria durante la
+/// sesión (pacientes, "Hoy" de la cuidadora...) lo observan para recargarse al
+/// cambiar de cuenta y no mostrar los del usuario anterior.
+final sessionUserIdProvider = Provider<String?>(
+    (ref) => ref.watch(currentUserProvider.select((u) => u?.userId)));

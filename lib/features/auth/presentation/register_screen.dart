@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
@@ -36,6 +37,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
             invitationToken: widget.invitationToken,
           );
+      if (!mounted) return;
+      final email = _email.text.trim();
+      // Vuelve al login (con el correo listo) para que entre con la cuenta nueva.
+      if (context.canPop()) {
+        context.pop(email);
+      } else {
+        showAppSnackBar(context, 'Cuenta creada. Ahora inicia sesión.');
+        context.go('/login');
+      }
     } on ApiException catch (e) {
       if (mounted) showAppSnackBar(context, e.message, error: true);
     } finally {

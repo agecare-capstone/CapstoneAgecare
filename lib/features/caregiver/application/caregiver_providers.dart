@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/application/auth_controller.dart';
 import '../../patients/application/patients_providers.dart';
 import '../data/caregiver_repository.dart';
 import '../domain/models.dart';
 
 /// Resumen del día / turno de la cuidadora.
 final caregiverTodayProvider = FutureProvider<CaregiverToday>((ref) {
+  ref.watch(sessionUserIdProvider); // se recarga al cambiar de cuenta
   return ref.watch(caregiverRepositoryProvider).getToday();
 });
 
@@ -39,6 +41,7 @@ final handoverNotesProvider =
 
 /// Plan freemium de la cuidadora.
 final caregiverPlanProvider = FutureProvider<CaregiverPlan>((ref) {
+  ref.watch(sessionUserIdProvider); // se recarga al cambiar de cuenta
   return ref.watch(caregiverRepositoryProvider).getPlan();
 });
 
@@ -54,5 +57,6 @@ final caregiverReportProvider =
 
 /// Perfil profesional de la cuidadora.
 final caregiverProfileProvider = FutureProvider<CaregiverProfile>((ref) {
+  ref.watch(sessionUserIdProvider); // se recarga al cambiar de cuenta
   return ref.watch(caregiverRepositoryProvider).getProfile();
 });

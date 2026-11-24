@@ -20,6 +20,8 @@ String? routeForNotification(Map<String, dynamic> data) {
   if (alertId is String && alertId.isNotEmpty) return '/alerts/$alertId';
   final doseId = data['dose_id'];
   if (doseId is String && doseId.isNotEmpty) return '/dose/$doseId';
+  // Remedio nuevo, cambiado o eliminado del plan: abre la lista de remedios.
+  if (data['type'] == 'medication') return '/meds';
   return null;
 }
 

@@ -69,6 +69,7 @@ void main() {
       '/alerts/a-fall-1',
     );
     expect(routeForNotification({'type': 'dose', 'dose_id': 'd-1'}), '/dose/d-1');
+    expect(routeForNotification({'type': 'medication', 'change': 'created'}), '/meds');
     expect(routeForNotification({'type': 'chat'}), isNull);
   });
 

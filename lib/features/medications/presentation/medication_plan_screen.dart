@@ -48,6 +48,7 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
 
   bool _loading = false;
   bool _saving = false;
+  bool _deleting = false;
   bool get _isEdit => widget.medicationId != null;
 
   @override
@@ -214,12 +215,64 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
     }
   }
 
+  /// Quita el remedio del plan (DELETE: el servidor lo marca como suspendido,
+  /// borra las tomas futuras pendientes y conserva el historial).
+  Future<void> _delete() async {
+    final name = _name.text.trim().isEmpty ? 'este remedio' : _name.text.trim();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('¿Eliminar $name del plan?'),
+        content: const Text(
+            'Se dejarán de avisar sus tomas a la cuidadora y al adulto mayor. '
+            'Las tomas ya registradas quedan en el historial.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              key: const Key('confirm-delete-medication'),
+              style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.statusAttention),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Sí, eliminar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _deleting = true);
+    try {
+      await ref
+          .read(medicationsRepositoryProvider)
+          .deleteMedication(widget.patientId, widget.medicationId!);
+      ref.invalidate(medicationsProvider);
+      ref.invalidate(todayDosesProvider);
+      if (mounted) {
+        showAppSnackBar(context, 'Listo: $name se eliminó del plan.');
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) showAppSnackBar(context, e.toString(), error: true);
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(
-              _isEdit ? 'Cambiar un remedio' : 'Agregar un remedio nuevo')),
+        title: Text(_isEdit ? 'Cambiar un remedio' : 'Agregar un remedio nuevo'),
+        actions: [
+          if (_isEdit)
+            IconButton(
+              key: const Key('delete-medication'),
+              tooltip: 'Eliminar remedio',
+              icon: const Icon(Icons.delete_outline_rounded),
+              onPressed: _saving || _deleting || _loading ? null : _delete,
+            ),
+        ],
+      ),
       body: _loading
           ? const LoadingView()
           : Form(
@@ -349,6 +402,24 @@ class _MedicationPlanScreenState extends ConsumerState<MedicationPlanScreen> {
                             ? 'Guardar cambios'
                             : 'Agregar remedio al plan'),
                   ),
+                  if (_isEdit) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      key: const Key('delete-medication-button'),
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.statusAttention,
+                          side: const BorderSide(
+                              color: AppColors.statusAttention)),
+                      onPressed: _saving || _deleting ? null : _delete,
+                      icon: _deleting
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.delete_outline_rounded),
+                      label: const Text('Eliminar remedio del plan'),
+                    ),
+                  ],
                 ],
               ),
             ),
